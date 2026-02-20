@@ -3,151 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADMIN v2.0 - NADĚJE</title>
+    <title>ADMIN v2.0 - KANCELÁŘ NADĚJE</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
+    
     <style>
-        /* Tvé barvy z adminu */
-        :root { --blue: #3182ce; --green: #38a169; --red: #e53e3e; --bg: #f0f4f8; }
-        body { font-family: sans-serif; background: var(--bg); padding: 20px; }
-        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .btn { padding: 15px; border: none; border-radius: 10px; color: white; cursor: pointer; width: 100%; font-weight: bold; margin-top: 5px; }
+        :root { 
+            --blue: #3182ce; --green: #38a169; --red: #e53e3e; --orange: #ed8936; 
+            --bg: #f0f4f8; --text: #2d3748;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; color: var(--text); margin: 0; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: white; padding: 30px; border-radius: 20px; margin-bottom: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        h2 { margin-top: 0; border-bottom: 2px solid #edf2f7; padding-bottom: 12px; }
+        label { display: block; margin-top: 15px; font-weight: bold; font-size: 0.85em; color: #718096; }
+        input, textarea { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #cbd5e0; border-radius: 10px; box-sizing: border-box; }
+        .btn { padding: 15px; border: none; border-radius: 12px; color: white; cursor: pointer; width: 100%; font-weight: bold; text-transform: uppercase; transition: 0.3s; margin-top: 10px; }
         .btn-blue { background: var(--blue); }
         .btn-green { background: var(--green); }
-        .match-item { background: #fff; border: 1px solid #eee; padding: 15px; border-radius: 15px; margin-top: 10px; }
-        textarea { width: 100%; height: 80px; border-radius: 8px; padding: 10px; border: 1px solid #ddd; }
+        .btn-orange { background: var(--orange); }
+        .match-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 18px; margin-top: 20px; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 10px; font-size: 0.8em; font-weight: bold; color: white; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-    <div style="max-width: 800px; margin: 0 auto;">
-        <a href="index.html" style="text-decoration:none; color:gray;">← Zpět na web</a>
-        <h1>⚙️ Administrace v2.0</h1>
+<div class="container">
+    <div style="text-align: center; margin-bottom: 20px;">
+        <img src="IMG_8429.png" style="max-width: 150px; border-radius: 20px;">
+    </div>
+    <a href="index.html" style="text-decoration: none; color: var(--blue); font-weight: bold;">← ZPĚT NA WEB</a>
+    <h1>⚙️ Administrace v2.0</h1>
 
-        <div class="card">
-            <h2>🚀 Vypsat nový zápas</h2>
-            <div style="display:flex; gap:10px;">
-                <input type="text" id="d" placeholder="Domácí">
-                <input type="text" id="h" placeholder="Hosté">
-            </div>
-            <input type="text" id="kd" placeholder="Kód vlajky D (např. cz)">
-            <input type="text" id="kh" placeholder="Kód vlajky H (např. ca)">
-            <input type="datetime-local" id="dl">
-            <button class="btn btn-green" id="addMatchBtn">Uveřejnit zápas</button>
-        </div>
-
-        <div class="card">
-            <h2>📊 Aktivní zápasy</h2>
-            <div id="activeMatches">Načítám...</div>
-        </div>
+    <div class="card">
+        <h2>💰 Správa banku</h2>
+        <label>Zůstatek z minulých kol (Kč):</label>
+        <input type="number" id="prevBankInput">
+        <button class="btn btn-blue" id="saveBankBtn">Uložit bank</button>
     </div>
 
-    <script type="module">
-        import { DBService } from './js/database.js';
-        import { calculatePoints } from './js/core.js';
+    <div class="card">
+        <h2>🚀 Vypsat nový zápas</h2>
+        <div style="display:flex; gap:15px;">
+            <div style="flex:1;"><label>Domácí:</label><input type="text" id="d" placeholder="Např. Česko"></div>
+            <div style="flex:1;"><label>Hosté:</label><input type="text" id="h" placeholder="Např. Kanada"></div>
+        </div>
+        <div style="display:flex; gap:15px;">
+            <div style="flex:1;"><label>Kód vlajky D:</label><input type="text" id="kd" placeholder="cz"></div>
+            <div style="flex:1;"><label>Kód vlajky H:</label><input type="text" id="kh" placeholder="ca"></div>
+        </div>
+        <label>Uzávěrka (Deadline):</label>
+        <input type="datetime-local" id="dl">
+        <button class="btn btn-green" id="addMatchBtn">Uveřejnit na webu</button>
+    </div>
 
-        const db = firebase.database();
+    <div class="card">
+        <h2>📊 Seznam zápasů</h2>
+        <div id="matchList">Načítám...</div>
+    </div>
+</div>
 
-        // 1. PŘIDÁNÍ ZÁPASU
-        document.getElementById('addMatchBtn').onclick = () => {
-            const d = document.getElementById('d').value, 
-                  h = document.getElementById('h').value,
-                  kd = document.getElementById('kd').value,
-                  kh = document.getElementById('kh').value,
-                  dl = document.getElementById('dl').value;
+<script type="module">
+    import { DBService } from './js/database.js';
+    import { calculatePoints } from './js/core.js';
 
-            if(!d || !h || !dl) return alert("Vyplň vše!");
+    const db = firebase.database();
 
-            db.ref('sazkyData/zapasy').push({
-                domaci: d, hoste: h, kodD: kd, kodH: kh, deadline: dl, status: "aktivni"
-            }).then(() => location.reload());
-        };
+    // NAČTENÍ BANKU
+    DBService.getBank(val => document.getElementById('prevBankInput').value = val);
+    document.getElementById('saveBankBtn').onclick = () => {
+        const val = parseInt(document.getElementById('prevBankInput').value) || 0;
+        db.ref('sazkyData/prevedenyBank').set(val).then(() => alert("Bank uložen."));
+    };
 
-        // 2. ZOBRAZENÍ ZÁPASŮ
-        DBService.getMatches(data => {
-            const container = document.getElementById('activeMatches');
-            container.innerHTML = "";
-            if(!data) return;
+    // PŘIDÁNÍ ZÁPASU
+    document.getElementById('addMatchBtn').onclick = () => {
+        const d = document.getElementById('d').value, h = document.getElementById('h').value,
+              kd = document.getElementById('kd').value, kh = document.getElementById('kh').value,
+              dl = document.getElementById('dl').value;
+        if(!d || !h || !dl) return alert("Vyplň údaje!");
+        db.ref('sazkyData/zapasy').push({ domaci: d, hoste: h, kodD: kd, kodH: kh, deadline: dl, status: "aktivni" })
+          .then(() => { alert("Zápas vytvořen!"); location.reload(); });
+    };
 
-            Object.entries(data).forEach(([mid, m]) => {
-                if(m.status === "vyhodnoceno") return;
+    // ZOBRAZENÍ ZÁPASŮ A VYHODNOCENÍ
+    DBService.getMatches(data => {
+        const container = document.getElementById('matchList');
+        container.innerHTML = "";
+        if(!data) return;
 
-                const div = document.createElement('div');
-                div.className = 'match-item';
-                div.innerHTML = `
-                    <strong>${m.domaci} vs ${m.hoste}</strong>
-                    <textarea id="raw-${mid}" placeholder="Vlož text z Livesportu pro vyhodnocení..."></textarea>
-                    <button class="btn btn-blue" id="eval-${mid}">VYHODNOTIT ZÁPAS</button>
-                `;
-                container.appendChild(div);
+        Object.entries(data).reverse().forEach(([mid, m]) => {
+            const isDone = m.status === "vyhodnoceno";
+            const div = document.createElement('div');
+            div.className = 'match-item';
+            div.innerHTML = `
+                <div class="status-badge" style="background:${isDone ? 'var(--green)' : 'var(--blue)'}">
+                    ${isDone ? 'VYHODNOCENO: ' + m.vysledek : 'AKTIVNÍ'}
+                </div>
+                <div style="font-size:1.2em; font-weight:bold; margin-bottom:10px;">${m.domaci} - ${m.hoste}</div>
+                <textarea id="raw-${mid}" placeholder="Vlož text z Livesportu pro ${isDone ? 'opravu' : 'vyhodnocení'}..."></textarea>
+                <button class="btn ${isDone ? 'btn-orange' : 'btn-blue'}" id="eval-${mid}">
+                    ${isDone ? '🔄 PŘEVYHODNOTIT (OPRAVIT CHYBU)' : '✅ VYHODNOTIT'}
+                </button>
+            `;
+            container.appendChild(div);
+            document.getElementById(`eval-${mid}`).onclick = () => processSmartEvaluation(mid, m);
+        });
+    });
 
-                document.getElementById(`eval-${mid}`).onclick = () => processEvaluation(mid, m);
-            });
+    async function processSmartEvaluation(mid, match) {
+        const raw = document.getElementById(`raw-${mid}`).value;
+        if(!raw) return alert("Vlož text z Livesportu!");
+
+        // PARSER
+        let clean = raw.split(/PRODLOUŽENÍ|PENALTY/i)[0];
+        const sc = clean.match(/(\d+)\s*[:|-]\s*(\d+)/g);
+        if(!sc) return alert("Skóre nenalezeno!");
+        const lastScore = sc[sc.length-1].replace(/\s/g,'').replace('-',':').split(':');
+        const result = { skore: `${lastScore[0]}:${lastScore[1]}`, střelci: [] };
+        
+        clean.split('\n').forEach(line => {
+            if (line.match(/^[\d+]+['.]/)) {
+                let n = line.replace(/^[\d+]+['.]\s*/, '').split('(')[0].split(',')[0].replace(/[0-9]/g, '').trim();
+                if(n.length > 2) result.střelci.push(n);
+            }
         });
 
-        // 3. LOGIKA VYHODNOCENÍ (Livesport Parser + Point Engine)
-        async function processEvaluation(mid, match) {
-            const raw = document.getElementById(`raw-${mid}`).value;
-            if(!raw) return alert("Vlož text z Livesportu!");
+        if(!confirm(`Vyhodnotit jako ${result.skore}? Střelci: ${result.střelci.join(', ')}`)) return;
 
-            // --- PARSER ---
-            let clean = raw.split(/PRODLOUŽENÍ|PENALTY/i)[0];
-            const sc = clean.match(/(\d+)\s*[:|-]\s*(\d+)/g);
-            if(!sc) return alert("Nepodařilo se najít skóre!");
+        const tips = match.sazky || {};
+        const updates = {};
+
+        // CHYTRÉ PŘEČÍTÁNÍ BODŮ
+        for (const [uid, tip] of Object.entries(tips)) {
+            const pId = tip.userId || tip.jmeno;
+            const statRef = db.ref(`sazkyData/stats/${pId}`);
+            const newPoints = calculatePoints(tip, result);
             
-            const lastScore = sc[sc.length-1].replace(/\s/g,'').replace('-',':').split(':');
-            const result = {
-                skore: `${lastScore[0]}:${lastScore[1]}`,
-                střelci: []
-            };
+            const oldPointsTotal = tip.lastPointsGranted || 0;
+            const oldScoreHit = tip.lastScoreHit || 0;
 
-            // Tahání střelců (příjmení)
-            clean.split('\n').forEach(line => {
-                if (line.match(/^[\d+]+['.]/)) {
-                    let n = line.replace(/^[\d+]+['.]\s*/, '').split('(')[0].split(',')[0].replace(/[0-9]/g, '').replace(/[:|-]/g, '').trim();
-                    if(n.length > 2) result.střelci.push(n);
+            await statRef.transaction(current => {
+                if (!current) {
+                    current = { celkoveBody: 0, pocetTipu: 0, trefeneSkore: 0, jmeno: tip.jmeno };
                 }
+                // LOGIKA: Odečti, co jsi dostal minule, a přičti nové (Undo/Redo)
+                current.celkoveBody = (current.celkoveBody || 0) - oldPointsTotal + newPoints.total;
+                current.trefeneSkore = (current.trefeneSkore || 0) - oldScoreHit + (newPoints.score > 0 ? 1 : 0);
+                
+                // Počet tipů se zvýší jen při prvním vyhodnocení
+                if (match.status !== "vyhodnoceno") {
+                    current.pocetTipu = (current.pocetTipu || 0) + 1;
+                }
+                return current;
             });
 
-            if(!confirm(`Vyhodnotit jako ${result.skore}? Střelci: ${result.střelci.join(', ')}`)) return;
-
-            // --- VÝPOČET A ZÁPIS ---
-            const updates = {};
-            const tips = match.sazky || {};
-            
-            for (const [tid, tip] of Object.entries(tips)) {
-                const points = calculatePoints(tip, result);
-                const pId = tip.userId || tip.jmeno; // Použijeme unikátní ID z verze 2.0
-
-                // Aktualizace statistik (transakce by byla lepší, ale pro jednoduchost v batchi)
-                // Ve verzi 2.0 ukládáme do stats pod unikátním ID hráče
-                const statRef = `sazkyData/stats/${pId}`;
-                
-                // Poznámka: V ostrém provozu zde načteme aktuální stats a přičteme body
-                // Zde připraveno pro zápis:
-                updates[`${statRef}/lastMatch`] = mid;
-                // Body se přičítají k celku
-                db.ref(statRef).once('value', s => {
-                    const current = s.val() || { celkoveBody: 0, pocetTipu: 0, trefeneSkore: 0 };
-                    db.ref(statRef).update({
-                        celkoveBody: current.celkoveBody + points.total,
-                        pocetTipu: (current.pocetTipu || 0) + 1,
-                        trefeneSkore: current.trefeneSkore + (points.score > 0 ? 1 : 0),
-                        jmeno: tip.jmeno // Aby ve statistikách bylo hezké jméno
-                    });
-                });
-            }
-
-            updates[`sazkyData/zapasy/${mid}/status`] = "vyhodnoceno";
-            updates[`sazkyData/zapasy/${mid}/vysledek`] = result.skore;
-            
-            await db.ref().update(updates);
-            alert("Zápas vyhodnocen a body rozděleny!");
-            location.reload();
+            // Uložení zálohy do sázky
+            updates[`sazkyData/zapasy/${mid}/sazky/${uid}/lastPointsGranted`] = newPoints.total;
+            updates[`sazkyData/zapasy/${mid}/sazky/${uid}/lastScoreHit`] = (newPoints.score > 0 ? 1 : 0);
         }
-    </script>
+
+        updates[`sazkyData/zapasy/${mid}/status`] = "vyhodnoceno";
+        updates[`sazkyData/zapasy/${mid}/vysledek`] = result.skore;
+        updates[`sazkyData/zapasy/${mid}/strelciZapasu`] = result.střelci;
+
+        await db.ref().update(updates);
+        alert("Body přepočítány bez duplicit!");
+        location.reload();
+    }
+</script>
 </body>
 </html>
