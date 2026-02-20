@@ -10,7 +10,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="IMG_8429.png">
 
-    <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('setup',{'key':'BML1jwKFprCz7_q_d18NDkrfyUPH5H9uH45Nebu-f9JKW2kh2tYS_0H1atSd0y1EDYLQNl9VlIs6t9P-bx6L-xM' });</script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
@@ -154,8 +153,6 @@
         import { AuthService } from './js/auth.js';
         import { DBService } from './js/database.js';
 
-        // Starý systém notifikací smazán.
-
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');
         }
@@ -253,5 +250,18 @@
             }
         };
     </script>
-</body>
+
+    <script>
+        (function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));
+        
+        webpushr('setup',{'key':'BML1jwKFprCz7_q_d18NDkrfyUPH5H9uH45Nebu-f9JKW2kh2tYS_0H1atSd0y1EDYLQNl9VlIs6t9P-bx6L-xM' });
+
+        // iPhone/PWA pojistka: registrace po prvním kliknutí kamkoliv na web
+        document.addEventListener('click', function() {
+            if(typeof webpushr !== 'undefined') {
+                webpushr('fetch_subscription');
+            }
+        }, {once: true});
+    </script>
+    </body>
 </html>
