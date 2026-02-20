@@ -34,7 +34,7 @@
         <img src="IMG_8429.png" style="max-width: 150px; border-radius: 20px;">
     </div>
     <a href="index.html" style="text-decoration: none; color: var(--blue); font-weight: bold;">← ZPĚT NA WEB</a>
-    <h1>⚙️ Administrace v2.0 (Nová Data)</h1>
+    <h1>⚙️ Administrace v2.0 (Notifikace)</h1>
 
     <div class="card">
         <h2>💰 Správa banku (v2)</h2>
@@ -69,6 +69,46 @@
     import { calculatePoints } from './js/core.js';
 
     const db = firebase.database();
+
+    // --- FUNKCE PRO ROZESLÁNÍ NOTIFIKACÍ ---
+    async function notifyPlayers(matchName, score) {
+        const statsSnapshot = await db.ref('sazkyData_v2/stats').once('value');
+        const stats = statsSnapshot.val();
+        if (!stats) return;
+
+        const tokens = [];
+        Object.values(stats).forEach(u => {
+            if (u.fcmToken) tokens.push(u.fcmToken);
+        });
+
+        if (tokens.length === 0) return console.log("Nikdo nemá aktivní notifikace.");
+
+        // POUŽITÍ TVÉHO VAPID KLÍČE PRO ODESLÁNÍ
+        const VAPID_KEY = "BH4vAicYZOaT1i7oMnuYpYWrTq79J_jkVRGeLqXrHV9xTnURvr79Wt1ssfskoU_Rgrmh6NiAm5X9-O0mChYwwyw";
+
+        // Poznámka: Odesílání přímo z klienta vyžaduje Server Key, 
+        // ale pro testovací účely zkusíme tuto metodu.
+        const sendPromises = tokens.map(token => {
+            return fetch('https://fcm.googleapis.com/fcm/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'key=' + VAPID_KEY // Pokud toto selže, budeš muset najít ten Server Key (Legacy)
+                },
+                body: JSON.stringify({
+                    to: token,
+                    notification: {
+                        title: "Zápas vyhodnocen! ⚽",
+                        body: `Výsledek ${matchName} je ${score}. Koukni na body!`,
+                        icon: "IMG_8429.png",
+                        click_action: window.location.origin + "/index.html"
+                    }
+                })
+            });
+        });
+
+        await Promise.all(sendPromises);
+    }
 
     // Načtení banku
     DBService.getBank(val => document.getElementById('prevBankInput').value = val);
@@ -164,7 +204,15 @@
         updates[`sazkyData_v2/zapasy/${mid}/strelciZapasu`] = result.střelci;
 
         await db.ref().update(updates);
-        alert("Hotovo! Data v2 uložena.");
+        
+        // ODESLÁNÍ NOTIFIKACÍ
+        try {
+            await notifyPlayers(`${match.domaci}-${match.hoste}`, result.skore);
+            alert("Vyhodnoceno a notifikace odeslány! 🚀");
+        } catch (e) {
+            alert("Body uloženy, ale notifikace selhaly.");
+        }
+
         location.reload();
     }
 </script>
