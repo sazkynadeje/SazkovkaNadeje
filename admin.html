@@ -34,11 +34,11 @@
         <img src="IMG_8429.png" style="max-width: 150px; border-radius: 20px;">
     </div>
     <a href="index.html" style="text-decoration: none; color: var(--blue); font-weight: bold;">← ZPĚT NA WEB</a>
-    <h1>⚙️ Administrace v2.0</h1>
+    <h1>⚙️ Administrace v2.0 (Nová Data)</h1>
 
     <div class="card">
-        <h2>💰 Správa banku</h2>
-        <label>Zůstatek z minulých kol (Kč):</label>
+        <h2>💰 Správa banku (v2)</h2>
+        <label>Zůstatek pro novou verzi (Kč):</label>
         <input type="number" id="prevBankInput">
         <button class="btn btn-blue" id="saveBankBtn">Uložit bank</button>
     </div>
@@ -59,7 +59,7 @@
     </div>
 
     <div class="card">
-        <h2>📊 Seznam zápasů</h2>
+        <h2>📊 Seznam zápasů (v2)</h2>
         <div id="matchList">Načítám...</div>
     </div>
 </div>
@@ -70,24 +70,24 @@
 
     const db = firebase.database();
 
-    // NAČTENÍ BANKU
+    // Načtení banku
     DBService.getBank(val => document.getElementById('prevBankInput').value = val);
     document.getElementById('saveBankBtn').onclick = () => {
         const val = parseInt(document.getElementById('prevBankInput').value) || 0;
-        db.ref('sazkyData/prevedenyBank').set(val).then(() => alert("Bank uložen."));
+        db.ref('sazkyData_v2/prevedenyBank').set(val).then(() => alert("Bank v2 uložen."));
     };
 
-    // PŘIDÁNÍ ZÁPASU
+    // Přidání zápasu
     document.getElementById('addMatchBtn').onclick = () => {
         const d = document.getElementById('d').value, h = document.getElementById('h').value,
               kd = document.getElementById('kd').value, kh = document.getElementById('kh').value,
               dl = document.getElementById('dl').value;
         if(!d || !h || !dl) return alert("Vyplň údaje!");
-        db.ref('sazkyData/zapasy').push({ domaci: d, hoste: h, kodD: kd, kodH: kh, deadline: dl, status: "aktivni" })
-          .then(() => { alert("Zápas vytvořen!"); location.reload(); });
+        db.ref('sazkyData_v2/zapasy').push({ domaci: d, hoste: h, kodD: kd, kodH: kh, deadline: dl, status: "aktivni" })
+          .then(() => { alert("Zápas vytvořen v nové složce!"); location.reload(); });
     };
 
-    // ZOBRAZENÍ ZÁPASŮ A VYHODNOCENÍ
+    // Zobrazení a vyhodnocení
     DBService.getMatches(data => {
         const container = document.getElementById('matchList');
         container.innerHTML = "";
@@ -102,9 +102,9 @@
                     ${isDone ? 'VYHODNOCENO: ' + m.vysledek : 'AKTIVNÍ'}
                 </div>
                 <div style="font-size:1.2em; font-weight:bold; margin-bottom:10px;">${m.domaci} - ${m.hoste}</div>
-                <textarea id="raw-${mid}" placeholder="Vlož text z Livesportu pro ${isDone ? 'opravu' : 'vyhodnocení'}..."></textarea>
+                <textarea id="raw-${mid}" placeholder="Vlož text z Livesportu..."></textarea>
                 <button class="btn ${isDone ? 'btn-orange' : 'btn-blue'}" id="eval-${mid}">
-                    ${isDone ? '🔄 PŘEVYHODNOTIT (OPRAVIT CHYBU)' : '✅ VYHODNOTIT'}
+                    ${isDone ? '🔄 PŘEVYHODNOTIT / OPRAVIT' : '✅ VYHODNOTIT'}
                 </button>
             `;
             container.appendChild(div);
@@ -116,7 +116,6 @@
         const raw = document.getElementById(`raw-${mid}`).value;
         if(!raw) return alert("Vlož text z Livesportu!");
 
-        // PARSER
         let clean = raw.split(/PRODLOUŽENÍ|PENALTY/i)[0];
         const sc = clean.match(/(\d+)\s*[:|-]\s*(\d+)/g);
         if(!sc) return alert("Skóre nenalezeno!");
@@ -130,15 +129,14 @@
             }
         });
 
-        if(!confirm(`Vyhodnotit jako ${result.skore}? Střelci: ${result.střelci.join(', ')}`)) return;
+        if(!confirm(`Vyhodnotit jako ${result.skore}?`)) return;
 
         const tips = match.sazky || {};
         const updates = {};
 
-        // CHYTRÉ PŘEČÍTÁNÍ BODŮ
         for (const [uid, tip] of Object.entries(tips)) {
             const pId = tip.userId || tip.jmeno;
-            const statRef = db.ref(`sazkyData/stats/${pId}`);
+            const statRef = db.ref(`sazkyData_v2/stats/${pId}`);
             const newPoints = calculatePoints(tip, result);
             
             const oldPointsTotal = tip.lastPointsGranted || 0;
@@ -148,28 +146,25 @@
                 if (!current) {
                     current = { celkoveBody: 0, pocetTipu: 0, trefeneSkore: 0, jmeno: tip.jmeno };
                 }
-                // LOGIKA: Odečti, co jsi dostal minule, a přičti nové (Undo/Redo)
                 current.celkoveBody = (current.celkoveBody || 0) - oldPointsTotal + newPoints.total;
                 current.trefeneSkore = (current.trefeneSkore || 0) - oldScoreHit + (newPoints.score > 0 ? 1 : 0);
                 
-                // Počet tipů se zvýší jen při prvním vyhodnocení
                 if (match.status !== "vyhodnoceno") {
                     current.pocetTipu = (current.pocetTipu || 0) + 1;
                 }
                 return current;
             });
 
-            // Uložení zálohy do sázky
-            updates[`sazkyData/zapasy/${mid}/sazky/${uid}/lastPointsGranted`] = newPoints.total;
-            updates[`sazkyData/zapasy/${mid}/sazky/${uid}/lastScoreHit`] = (newPoints.score > 0 ? 1 : 0);
+            updates[`sazkyData_v2/zapasy/${mid}/sazky/${uid}/lastPointsGranted`] = newPoints.total;
+            updates[`sazkyData_v2/zapasy/${mid}/sazky/${uid}/lastScoreHit`] = (newPoints.score > 0 ? 1 : 0);
         }
 
-        updates[`sazkyData/zapasy/${mid}/status`] = "vyhodnoceno";
-        updates[`sazkyData/zapasy/${mid}/vysledek`] = result.skore;
-        updates[`sazkyData/zapasy/${mid}/strelciZapasu`] = result.střelci;
+        updates[`sazkyData_v2/zapasy/${mid}/status`] = "vyhodnoceno";
+        updates[`sazkyData_v2/zapasy/${mid}/vysledek`] = result.skore;
+        updates[`sazkyData_v2/zapasy/${mid}/strelciZapasu`] = result.střelci;
 
         await db.ref().update(updates);
-        alert("Body přepočítány bez duplicit!");
+        alert("Hotovo! Data v2 uložena.");
         location.reload();
     }
 </script>
