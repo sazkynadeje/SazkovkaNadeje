@@ -1,42 +1,38 @@
-// sw.js - Service Worker pro notifikace
-importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js');
+// sw.js - Vyčištěný Service Worker pro PWA (Naděje v2.0)
 
-// Tvůj Firebase Config (zkontroluj, zda sedí s tvým database.js)
-const firebaseConfig = {
-    apiKey: "AIzaSyCxV...", 
-    authDomain: "nadeje-208bd.firebaseapp.com",
-    databaseURL: "https://nadeje-208bd-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "nadeje-208bd",
-    storageBucket: "nadeje-208bd.appspot.com",
-    messagingSenderId: "305101689255",
-    appId: "1:305101689255:web:c08343111f15598696ec06"
-};
+const CACHE_NAME = 'nadeje-v2-cache-v1';
+const ASSETS = [
+  './',
+  './index.html',
+  './IMG_8429.png',
+  './manifest.json'
+];
 
-firebase.initializeApp(firebaseConfig);
-const messaging = firebase.messaging();
-
-// Tato část zachytí notifikaci, když je aplikace zavřená (na pozadí)
-messaging.onBackgroundMessage((payload) => {
-  console.log('[sw.js] Přijata zpráva na pozadí: ', payload);
-  
-  const notificationTitle = payload.notification.title || "Kancelář Naděje";
-  const notificationOptions = {
-    body: payload.notification.body || "Máš nový výsledek!",
-    icon: 'IMG_8429.png', // Logo, které se zobrazí u notifikace
-    badge: 'IMG_8429.png', // Malá ikonka v liště (Android)
-    data: {
-      url: './index.html' // Kam se má uživatel dostat po kliknutí
-    }
-  };
-
-  self.registration.showNotification(notificationTitle, notificationOptions);
+// Instalace Service Workeru a cachování základních souborů
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(ASSETS);
+    })
+  );
 });
 
-// Co se má stát, když uživatel na notifikaci klikne
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
+// Aktivace a smazání starých verzí cache
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    clients.openWindow(event.notification.data.url)
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+      );
+    })
+  );
+});
+
+// Obsluha požadavků (aby appka běžela svižně)
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
+    })
   );
 });
