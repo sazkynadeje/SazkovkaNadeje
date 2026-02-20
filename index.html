@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KANCELÁŘ NADĚJE v2.0</title>
 
     <link rel="manifest" href="manifest.json">
@@ -12,6 +12,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
 
     <style>
         /* --- TVŮJ KOMPLETNÍ NEONOVÝ DESIGN --- */
@@ -153,6 +154,27 @@
         import { AuthService } from './js/auth.js';
         import { DBService } from './js/database.js';
 
+        // --- NOTIFIKACE REGISTRACE ---
+        async function initNotifications(userId) {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    const messaging = firebase.messaging();
+                    const token = await messaging.getToken({ 
+                        vapidKey: 'BH4vAicYZOaT1i7oMnuYpYWrTq79J_jkVRGeLqXrHV9xTnURvr79Wt1ssfskoU_Rgrmh6NiAm5X9-O0mChYwwyw' 
+                    });
+
+                    if (token) {
+                        // Uložíme token do složky v2 pod uživatelovo ID
+                        await firebase.database().ref(`sazkyData_v2/stats/${userId}/fcmToken`).set(token);
+                        console.log("Token uložen pro notifikace.");
+                    }
+                }
+            } catch (err) {
+                console.log("Notifikace se nepodařilo nastavit:", err);
+            }
+        }
+
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');
         }
@@ -165,10 +187,14 @@
             const name = prompt("Vítej! Zadej své jméno pro sázky:");
             if (name) {
                 user = AuthService.setUser(name);
+                location.reload();
             }
         }
+
         if (user) {
             document.getElementById('userWelcome').innerText = `Hráč: ${user.name}`;
+            // Aktivujeme notifikace po 3 vteřinách
+            setTimeout(() => initNotifications(user.id), 3000);
         }
 
         // 2. DATA NAČTENÍ
@@ -177,7 +203,10 @@
         DBService.getMatches(zapasy => {
             const container = document.getElementById('matchList');
             container.innerHTML = "";
-            if (!zapasy) return;
+            if (!zapasy) {
+                container.innerHTML = "<div style='opacity:0.5'>Zatím žádné aktivní zápasy</div>";
+                return;
+            }
 
             Object.entries(zapasy).forEach(([id, m]) => {
                 if(m.status === "vyhodnoceno") return;
@@ -192,7 +221,7 @@
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
                         <div style="color:var(--neon); font-size:0.75em; font-weight:900; letter-spacing:1px;">ID: ${id.substring(0,4)}</div>
-                        <div class="timer-box">⏱️ ${m.deadline.split('T')[1] || ''}</div>
+                        <div class="timer-box">⏱️ ${m.deadline ? m.deadline.split('T')[1] : ''}</div>
                     </div>
                     <div class="flags-wrapper">
                         <div><img class="flag-img" src="https://flagcdn.com/w160/${m.kodD}.png"><br><small>${m.domaci}</small></div>
@@ -218,7 +247,7 @@
                     
                     if(sD === "" || sH === "" || !str) return alert("Vyplň vše!");
                     
-                    cart[id] = { skore: `${sD}:${sH}`, strelec: str, skryt: false };
+                    cart[id] = { tip: `${sD}:${sH}`, strelec: str, skryt: false };
                     updateFAB();
                     document.getElementById(`detail-${id}`).style.display = 'none';
                 };
