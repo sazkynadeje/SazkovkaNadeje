@@ -12,7 +12,6 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
 
     <style>
         /* --- TVŮJ KOMPLETNÍ NEONOVÝ DESIGN --- */
@@ -154,26 +153,7 @@
         import { AuthService } from './js/auth.js';
         import { DBService } from './js/database.js';
 
-        // --- NOTIFIKACE REGISTRACE ---
-        async function initNotifications(userId) {
-            try {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    const messaging = firebase.messaging();
-                    const token = await messaging.getToken({ 
-                        vapidKey: 'BH4vAicYZOaT1i7oMnuYpYWrTq79J_jkVRGeLqXrHV9xTnURvr79Wt1ssfskoU_Rgrmh6NiAm5X9-O0mChYwwyw' 
-                    });
-
-                    if (token) {
-                        // Uložíme token do složky v2 pod uživatelovo ID
-                        await firebase.database().ref(`sazkyData_v2/stats/${userId}/fcmToken`).set(token);
-                        console.log("Token uložen pro notifikace.");
-                    }
-                }
-            } catch (err) {
-                console.log("Notifikace se nepodařilo nastavit:", err);
-            }
-        }
+        // Starý systém notifikací smazán.
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');
@@ -193,8 +173,6 @@
 
         if (user) {
             document.getElementById('userWelcome').innerText = `Hráč: ${user.name}`;
-            // Aktivujeme notifikace po 3 vteřinách
-            setTimeout(() => initNotifications(user.id), 3000);
         }
 
         // 2. DATA NAČTENÍ
