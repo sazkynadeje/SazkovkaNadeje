@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KANCELÁŘ NADĚJE v2.0</title>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <style>
+        /* Zde jsou tvé původní neonové styly (zkráceno pro přehlednost, vlož tam své kompletní CSS z v4.9.1) */
+        :root { --neon: #00f2ff; --dark: #0f172a; --card-bg: rgba(255, 255, 255, 0.05); }
+        body { background-color: var(--dark); color: #ffffff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; text-align: center; }
+        .header-logo { max-width: 450px; width: 90%; margin: 20px 0; filter: drop-shadow(0 0 10px var(--neon)); }
+        .bank-box { background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,242,255,0.08) 100%); border: 1px solid rgba(0, 242, 255, 0.4); border-radius: 30px; padding: 30px; margin-bottom: 40px; }
+        .match-card { background: var(--card-bg); border-radius: 35px; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 35px; padding: 30px; transition: 0.5s; position: relative; }
+        .flags-wrapper { display: flex; justify-content: center; align-items: center; gap: 25px; margin: 25px 0; }
+        .flag-img { width: 110px; border-radius: 10px; animation: flagWave 3s ease-in-out infinite; }
+        @keyframes flagWave { 0%, 100% { transform: rotateY(0deg); } 50% { transform: rotateY(35deg) scale(1.05); } }
+        .timer-box { color: var(--neon); font-weight: 800; }
+        .details { display: none; padding-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 30px; }
+        .input-field { width: 100%; padding: 15px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 15px; margin-bottom: 10px; }
+        .score-input { width: 60px; height: 50px; text-align: center; font-size: 1.5em; background: #000; color: white; border: 2px solid #334; border-radius: 10px; }
+        .fab-cart { position: fixed; bottom: 30px; right: 30px; width: 70px; height: 70px; background: var(--neon); border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 2em; z-index: 5000; }
+        /* ... sem vlož zbytek svého CSS (modály, tlačítka atd.) ... */
+    </style>
+</head>
+<body>
+
+    <a href="admin.html" style="position:fixed; top:20px; right:20px; text-decoration:none;">⚙️</a>
+    <img src="IMG_8429.png" class="header-logo" alt="LOGO">
+
+    <div class="bank-box">
+        <span style="opacity:0.5; font-size:0.8em; letter-spacing:2px;">MAXIMÁLNÍ VÝHRA</span>
+        <div style="font-size:3em; font-weight:900;"><span id="uiMainBank">0</span> Kč</div>
+    </div>
+
+    <div id="matchList">Načítám zápasy...</div>
+
+    <div id="fabCart" class="fab-cart">
+        🎟️ <div id="fabBadge" style="position:absolute; top:-5px; right:-5px; background:red; font-size:0.4em; width:25px; height:25px; border-radius:50%; display:flex; align-items:center; justify-content:center;">0</div>
+    </div>
+
+    <script type="module">
+        import { AuthService } from './js/auth.js';
+        import { DBService } from './js/database.js';
+
+        let cart = {};
+
+        // 1. KONTROLA PŘIHLÁŠENÍ (Při první návštěvě se zeptá na jméno)
+        let user = AuthService.getUser();
+        if (!user) {
+            const name = prompt("Vítej! Zadej své jméno pro sázky:");
+            if (name) {
+                user = AuthService.setUser(name);
+            } else {
+                alert("Bez jména nemůžeš sázet.");
+            }
+        }
+
+        // 2. NAČTENÍ DAT
+        DBService.getBank(val => { document.getElementById('uiMainBank').innerText = val; });
+        
+        DBService.getMatches(zapasy => {
+            const container = document.getElementById('matchList');
+            container.innerHTML = "";
+            if (!zapasy) return;
+
+            Object.entries(zapasy).forEach(([id, m]) => {
+                const card = document.createElement('div');
+                card.className = "match-card";
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between;">
+                        <span class="timer-box" id="timer-${id}">--:--</span>
+                        <span style="font-size:0.8em; opacity:0.6;">ID: ${id.substring(0,5)}</span>
+                    </div>
+                    <div class="flags-wrapper">
+                        <div><img class="flag-img" src="https://flagcdn.com/w160/${m.kodD}.png"><br>${m.domaci}</div>
+                        <div style="font-weight:900;">VS</div>
+                        <div><img class="flag-img" src="https://flagcdn.com/w160/${m.kodH}.png"><br>${m.hoste}</div>
+                    </div>
+                    <button class="btn-add-ticket" id="btn-open-${id}" style="width:100%; padding:10px; background:var(--neon); color:black; border:none; border-radius:10px; font-weight:bold;">VSADIT</button>
+                    
+                    <div id="detail-${id}" class="details">
+                        <div style="margin-bottom:15px; font-weight:bold;">Sázíš jako: ${user.name}</div>
+                        <div style="display:flex; justify-content:center; gap:10px; margin-bottom:15px;">
+                            <input type="number" id="scD-${id}" class="score-input" placeholder="0">
+                            <span style="font-size:2em;">:</span>
+                            <input type="number" id="scH-${id}" class="score-input" placeholder="0">
+                        </div>
+                        <input type="text" id="striker-${id}" class="input-field" placeholder="Střelec (příjmení)">
+                        <button class="btn-confirm" id="btn-add-${id}" style="width:100%; padding:15px; background:white; color:black; border:none; border-radius:10px; font-weight:900;">PŘIDAT NA TIKET (20 Kč)</button>
+                    </div>
+                `;
+                container.appendChild(card);
+
+                // Eventy
+                document.getElementById(`btn-open-${id}`).onclick = () => {
+                    const d = document.getElementById(`detail-${id}`);
+                    d.style.display = d.style.display === 'block' ? 'none' : 'block';
+                };
+
+                document.getElementById(`btn-add-${id}`).onclick = () => {
+                    const sD = document.getElementById(`scD-${id}`).value;
+                    const sH = document.getElementById(`scH-${id}`).value;
+                    const str = document.getElementById(`striker-${id}`).value;
+                    
+                    if(sD === "" || sH === "" || !str) return alert("Vyplň vše!");
+                    
+                    cart[id] = { skore: `${sD}:${sH}`, strelec: str, skryt: false };
+                    updateFAB();
+                    document.getElementById(`detail-${id}`).style.display = 'none';
+                    alert("Přidáno do košíku!");
+                };
+            });
+        });
+
+        function updateFAB() {
+            const count = Object.keys(cart).length;
+            const fab = document.getElementById('fabCart');
+            if(count > 0) {
+                fab.style.display = 'flex';
+                document.getElementById('fabBadge').innerText = count;
+            }
+        }
+
+        document.getElementById('fabCart').onclick = async () => {
+            if (confirm(`Odeslat tiket s ${Object.keys(cart).length} sázkami?`)) {
+                try {
+                    await DBService.sendTicket(cart);
+                    alert("Tiket odeslán!");
+                    cart = {};
+                    location.reload();
+                } catch (e) {
+                    alert("Chyba: " + e.message);
+                }
+            }
+        };
+
+    </script>
+</body>
+</html>
