@@ -1,153 +1,20 @@
-<!DOCTYPE html>
-<html lang="cs">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADMIN v2.0 - NADĚJE</title>
-    
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
-    <style>
-        /* Tvé barvy z adminu */
-        :root { --blue: #3182ce; --green: #38a169; --red: #e53e3e; --bg: #f0f4f8; }
-        body { font-family: sans-serif; background: var(--bg); padding: 20px; }
-        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .btn { padding: 15px; border: none; border-radius: 10px; color: white; cursor: pointer; width: 100%; font-weight: bold; margin-top: 5px; }
-        .btn-blue { background: var(--blue); }
-        .btn-green { background: var(--green); }
-        .match-item { background: #fff; border: 1px solid #eee; padding: 15px; border-radius: 15px; margin-top: 10px; }
-        textarea { width: 100%; height: 80px; border-radius: 8px; padding: 10px; border: 1px solid #ddd; }
-    </style>
-</head>
-<body>
-
-    <div style="max-width: 800px; margin: 0 auto;">
-        <a href="index.html" style="text-decoration:none; color:gray;">← Zpět na web</a>
-        <h1>⚙️ Administrace v2.0</h1>
-
-        <div class="card">
-            <h2>🚀 Vypsat nový zápas</h2>
-            <div style="display:flex; gap:10px;">
-                <input type="text" id="d" placeholder="Domácí">
-                <input type="text" id="h" placeholder="Hosté">
-            </div>
-            <input type="text" id="kd" placeholder="Kód vlajky D (např. cz)">
-            <input type="text" id="kh" placeholder="Kód vlajky H (např. ca)">
-            <input type="datetime-local" id="dl">
-            <button class="btn btn-green" id="addMatchBtn">Uveřejnit zápas</button>
-        </div>
-
-        <div class="card">
-            <h2>📊 Aktivní zápasy</h2>
-            <div id="activeMatches">Načítám...</div>
-        </div>
-    </div>
-
-    <script type="module">
-        import { DBService } from './js/database.js';
-        import { calculatePoints } from './js/core.js';
-
-        const db = firebase.database();
-
-        // 1. PŘIDÁNÍ ZÁPASU
-        document.getElementById('addMatchBtn').onclick = () => {
-            const d = document.getElementById('d').value, 
-                  h = document.getElementById('h').value,
-                  kd = document.getElementById('kd').value,
-                  kh = document.getElementById('kh').value,
-                  dl = document.getElementById('dl').value;
-
-            if(!d || !h || !dl) return alert("Vyplň vše!");
-
-            db.ref('sazkyData/zapasy').push({
-                domaci: d, hoste: h, kodD: kd, kodH: kh, deadline: dl, status: "aktivni"
-            }).then(() => location.reload());
-        };
-
-        // 2. ZOBRAZENÍ ZÁPASŮ
-        DBService.getMatches(data => {
-            const container = document.getElementById('activeMatches');
-            container.innerHTML = "";
-            if(!data) return;
-
-            Object.entries(data).forEach(([mid, m]) => {
-                if(m.status === "vyhodnoceno") return;
-
-                const div = document.createElement('div');
-                div.className = 'match-item';
-                div.innerHTML = `
-                    <strong>${m.domaci} vs ${m.hoste}</strong>
-                    <textarea id="raw-${mid}" placeholder="Vlož text z Livesportu pro vyhodnocení..."></textarea>
-                    <button class="btn btn-blue" id="eval-${mid}">VYHODNOTIT ZÁPAS</button>
-                `;
-                container.appendChild(div);
-
-                document.getElementById(`eval-${mid}`).onclick = () => processEvaluation(mid, m);
-            });
-        });
-
-        // 3. LOGIKA VYHODNOCENÍ (Livesport Parser + Point Engine)
-        async function processEvaluation(mid, match) {
-            const raw = document.getElementById(`raw-${mid}`).value;
-            if(!raw) return alert("Vlož text z Livesportu!");
-
-            // --- PARSER ---
-            let clean = raw.split(/PRODLOUŽENÍ|PENALTY/i)[0];
-            const sc = clean.match(/(\d+)\s*[:|-]\s*(\d+)/g);
-            if(!sc) return alert("Nepodařilo se najít skóre!");
-            
-            const lastScore = sc[sc.length-1].replace(/\s/g,'').replace('-',':').split(':');
-            const result = {
-                skore: `${lastScore[0]}:${lastScore[1]}`,
-                střelci: []
-            };
-
-            // Tahání střelců (příjmení)
-            clean.split('\n').forEach(line => {
-                if (line.match(/^[\d+]+['.]/)) {
-                    let n = line.replace(/^[\d+]+['.]\s*/, '').split('(')[0].split(',')[0].replace(/[0-9]/g, '').replace(/[:|-]/g, '').trim();
-                    if(n.length > 2) result.střelci.push(n);
-                }
-            });
-
-            if(!confirm(`Vyhodnotit jako ${result.skore}? Střelci: ${result.střelci.join(', ')}`)) return;
-
-            // --- VÝPOČET A ZÁPIS ---
-            const updates = {};
-            const tips = match.sazky || {};
-            
-            for (const [tid, tip] of Object.entries(tips)) {
-                const points = calculatePoints(tip, result);
-                const pId = tip.userId || tip.jmeno; // Použijeme unikátní ID z verze 2.0
-
-                // Aktualizace statistik (transakce by byla lepší, ale pro jednoduchost v batchi)
-                // Ve verzi 2.0 ukládáme do stats pod unikátním ID hráče
-                const statRef = `sazkyData/stats/${pId}`;
-                
-                // Poznámka: V ostrém provozu zde načteme aktuální stats a přičteme body
-                // Zde připraveno pro zápis:
-                updates[`${statRef}/lastMatch`] = mid;
-                // Body se přičítají k celku
-                db.ref(statRef).once('value', s => {
-                    const current = s.val() || { celkoveBody: 0, pocetTipu: 0, trefeneSkore: 0 };
-                    db.ref(statRef).update({
-                        celkoveBody: current.celkoveBody + points.total,
-                        pocetTipu: (current.pocetTipu || 0) + 1,
-                        trefeneSkore: current.trefeneSkore + (points.score > 0 ? 1 : 0),
-                        jmeno: tip.jmeno // Aby ve statistikách bylo hezké jméno
-                    });
-                });
-            }
-
-            updates[`sazkyData/zapasy/${mid}/status`] = "vyhodnoceno";
-            updates[`sazkyData/zapasy/${mid}/vysledek`] = result.skore;
-            
-            await db.ref().update(updates);
-            alert("Zápas vyhodnocen a body rozděleny!");
-            location.reload();
-        }
-    </script>
-</body>
-</html>
+{
+  "short_name": "Naděje",
+  "name": "Kancelář Naděje v2.0",
+  "icons": [
+    {
+      "src": "IMG_8429.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "IMG_8429.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/index.html",
+  "display": "standalone",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a"
+}
