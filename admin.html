@@ -70,6 +70,31 @@
 
     const db = firebase.database();
 
+    // --- WEBPUSHR ODESÍLACÍ FUNKCE ---
+    async function sendPushNotification(matchName, score) {
+        const API_KEY = "E1831cba358cb7135d498741dc3d4d18";
+        const AUTH_TOKEN = "118988";
+
+        try {
+            await fetch('https://api.webpushr.com/v1/notification/send/all', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'webpushrKey': API_KEY,
+                    'webpushrAuthToken': AUTH_TOKEN
+                },
+                body: JSON.stringify({
+                    "title": "Zápas vyhodnocen! ⚽",
+                    "message": `Výsledek ${matchName} je ${score}. Koukni na body!`,
+                    "target_url": "https://sazkynadeje.github.io/SazkovkaNadeje/index.html"
+                })
+            });
+            console.log("Push odeslán přes Webpushr.");
+        } catch (e) {
+            console.error("Chyba při odesílání Push:", e);
+        }
+    }
+
     // Načtení banku
     DBService.getBank(val => document.getElementById('prevBankInput').value = val);
     document.getElementById('saveBankBtn').onclick = () => {
@@ -84,7 +109,7 @@
               dl = document.getElementById('dl').value;
         if(!d || !h || !dl) return alert("Vyplň údaje!");
         db.ref('sazkyData_v2/zapasy').push({ domaci: d, hoste: h, kodD: kd, kodH: kh, deadline: dl, status: "aktivni" })
-          .then(() => { alert("Zápas vytvořen v nové složce!"); location.reload(); });
+          .then(() => { alert("Zápas vytvořen!"); location.reload(); });
     };
 
     // Zobrazení a vyhodnocení
@@ -164,7 +189,11 @@
         updates[`sazkyData_v2/zapasy/${mid}/strelciZapasu`] = result.střelci;
 
         await db.ref().update(updates);
-        alert("Vyhodnoceno! 🚀");
+        
+        // ODESLÁNÍ NOTIFIKACE
+        await sendPushNotification(`${match.domaci}-${match.hoste}`, result.skore);
+        
+        alert("Hotovo! Body uloženy a notifikace odeslána. 🚀");
         location.reload();
     }
 </script>
