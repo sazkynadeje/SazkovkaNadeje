@@ -111,6 +111,24 @@
             font-weight: 900; cursor: pointer; text-transform: uppercase;
         }
 
+        /* --- TLAČÍTKO PRO NOTIFIKACE --- */
+        #enableNotifications {
+            display: none;
+            margin: 0 0 40px 0; padding: 15px 25px;
+            background: transparent; border: 2px solid var(--neon);
+            color: var(--neon); border-radius: 100px;
+            font-weight: 900; cursor: pointer;
+            box-shadow: 0 0 15px var(--neon);
+            text-transform: uppercase; letter-spacing: 1px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 15px var(--neon); }
+            50% { transform: scale(1.05); box-shadow: 0 0 25px var(--neon); }
+            100% { transform: scale(1); box-shadow: 0 0 15px var(--neon); }
+        }
+
         .fab-cart {
             position: fixed; bottom: 35px; right: 35px;
             width: 75px; height: 75px; background: var(--neon);
@@ -141,6 +159,8 @@
         <div id="userWelcome" style="margin-top:15px; color:var(--neon); font-weight:bold; font-size:0.9em;"></div>
     </div>
 
+    <button id="enableNotifications">🔔 CHCI NOTIFIKACE O GÓLECH</button>
+
     <a href="statistiky.html" class="btn-stats">📊 ŽEBŘÍČKY A STATISTIKY</a>
 
     <div id="matchList">Načítám zápasy...</div>
@@ -159,7 +179,6 @@
 
         let cart = {};
 
-        // 1. AUTH LOGIKA
         let user = AuthService.getUser();
         if (!user) {
             const name = prompt("Vítej! Zadej své jméno pro sázky:");
@@ -173,7 +192,6 @@
             document.getElementById('userWelcome').innerText = `Hráč: ${user.name}`;
         }
 
-        // 2. DATA NAČTENÍ
         DBService.getBank(val => document.getElementById('uiMainBank').innerText = val);
         
         DBService.getMatches(zapasy => {
@@ -220,9 +238,7 @@
                     const sD = document.getElementById(`scD-${id}`).value;
                     const sH = document.getElementById(`scH-${id}`).value;
                     const str = document.getElementById(`striker-${id}`).value;
-                    
                     if(sD === "" || sH === "" || !str) return alert("Vyplň vše!");
-                    
                     cart[id] = { tip: `${sD}:${sH}`, strelec: str, skryt: false };
                     updateFAB();
                     document.getElementById(`detail-${id}`).style.display = 'none';
@@ -252,16 +268,41 @@
     </script>
 
     <script>
-        (function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));
-        
-        webpushr('setup',{'key':'BML1jwKFprCz7_q_d18NDkrfyUPH5H9uH45Nebu-f9JKW2kh2tYS_0H1atSd0y1EDYLQNl9VlIs6t9P-bx6L-xM' });
+    (function(w,d, s, id) {
+        if(typeof(w.webpushr)!=='undefined') return;
+        w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};
+        var js, fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s); js.id = id;js.async=1;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+    }(window,document, 'script', 'webpushr-jssdk-alternative'));
 
-        // iPhone/PWA pojistka: registrace po prvním kliknutí kamkoliv na web
-        document.addEventListener('click', function() {
+    webpushr('init','BHnXQvMsyuIkh4upI3mpTYS-qF0EyFi-bkJXZZm9wobAMzWJzyAbx9iQHFIOlVrvj3lz7PtjxdL5vgZc6lz431c','https://sazkynadeje.github.io/SazkovkaNadeje/webpushr-sw.js','/SazkovkaNadeje/');
+
+    // Logika pro tlačítko notifikací
+    window.addEventListener('load', function() {
+        setTimeout(function() {
             if(typeof webpushr !== 'undefined') {
-                webpushr('fetch_subscription');
+                webpushr('notification_status', function(status) {
+                    console.log("Webpushr status:", status);
+                    if(status === 'default') {
+                        document.getElementById('enableNotifications').style.display = 'inline-block';
+                    }
+                });
             }
-        }, {once: true});
+        }, 2000);
+    });
+
+    document.getElementById('enableNotifications').onclick = function() {
+        webpushr('fetch_subscription', function(result) {
+            if(result.status === 'success') {
+                alert("Odběr aktivován! ⚽");
+                document.getElementById('enableNotifications').style.display = 'none';
+            } else {
+                alert("Nepodařilo se aktivovat. Ujisti se, že máš web na ploše a iOS 16.4+");
+            }
+        });
+    };
     </script>
-    </body>
+</body>
 </html>
