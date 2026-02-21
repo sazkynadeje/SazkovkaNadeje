@@ -3,49 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DEBUG TEST v2.0</title>
+    <title>KANCELÁŘ TEST v2.0</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="IMG_8429.png">
 
     <style>
-        body { font-family: -apple-system, sans-serif; background: #000; color: #fff; text-align: center; padding: 20px; }
-        .card { background: #111; border: 2px solid #00f2ff; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 0 15px rgba(0,242,255,0.3); }
-        button { width: 100%; padding: 20px; border-radius: 15px; border: none; font-weight: 900; font-size: 1.1em; cursor: pointer; margin: 10px 0; }
-        #testBtn { background: #00f2ff; color: #000; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #0f172a; color: #fff; text-align: center; padding: 20px; margin: 0; }
+        .card { background: #1e293b; border: 2px solid #00f2ff; border-radius: 25px; padding: 25px; margin-bottom: 20px; box-shadow: 0 0 20px rgba(0,242,255,0.2); }
+        h2 { color: #00f2ff; margin-top: 0; }
+        button { width: 100%; padding: 22px; border-radius: 18px; border: none; font-weight: 900; font-size: 1.1em; cursor: pointer; margin: 10px 0; -webkit-tap-highlight-color: transparent; }
+        #testBtn { background: #00f2ff; color: #0f172a; box-shadow: 0 5px 15px rgba(0,242,255,0.4); }
         #btnSend { background: #ff00ff; color: #fff; display: none; }
-        .debug-box { text-align: left; background: #222; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 12px; color: #00ff00; overflow-x: scroll; }
-        .status-line { margin: 10px 0; font-weight: bold; }
+        .log-box { text-align: left; background: #000; padding: 15px; border-radius: 15px; font-family: monospace; font-size: 11px; color: #00ff00; height: 150px; overflow-y: auto; border: 1px solid #334155; }
+        .status-badge { display: inline-block; padding: 5px 15px; border-radius: 100px; background: #334155; font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2>🚨 DIAGNOSTIKA</h2>
-        <div id="statusLine" class="status-line">Inicializace...</div>
-        <button id="testBtn">1. AKTIVOVAT ODBĚR</button>
+        <h2>1. REGISTRACE</h2>
+        <div id="statusBadge" class="status-badge">Načítám...</div>
+        <button id="testBtn">AKTIVOVAT OZNÁMENÍ</button>
     </div>
 
-    <div class="card" id="sendCard" style="display:none;">
-        <h2>🚀 ODESLÁNÍ</h2>
-        <button id="btnSend">2. POSLAT TEST PUSH</button>
+    <div id="sendCard" class="card" style="display:none;">
+        <h2>2. TEST ODESLÁNÍ</h2>
+        <p style="font-size: 0.9em; opacity: 0.8;">Teď zkusíme odeslat zprávu přes tvé nové API klíče.</p>
+        <button id="btnSend">POSLAT TEST PUSH</button>
     </div>
 
-    <div class="debug-box" id="debug">
-        [LOG]: Startuji diagnostiku...<br>
+    <div class="log-box" id="debugLog">
+        [SYSTEM]: Diagnostika spuštěna...<br>
     </div>
 
     <script>
-        const debug = document.getElementById('debug');
-        const statusLine = document.getElementById('statusLine');
-
-        function log(msg) {
-            debug.innerHTML += "[LOG]: " + msg + "<br>";
+        const log = (msg) => {
+            const d = document.getElementById('debugLog');
+            d.innerHTML += `> ${msg}<br>`;
+            d.scrollTop = d.scrollHeight;
             console.log(msg);
-        }
+        };
 
-        // --- SDK WEBPUSHR ---
+        const statusBadge = document.getElementById('statusBadge');
+
+        // --- WEBPUSHR SDK ---
         (function(w,d, s, id) {
             if(typeof(w.webpushr)!=='undefined') return;
             w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};
@@ -60,48 +64,55 @@
         webpushr('setup', { 'in_app_notification': false, 'onsite_messaging': false });
 
         // --- KONTROLA STAVU ---
-        function updateStatus() {
+        function checkWebpushr() {
             if (typeof webpushr !== 'undefined') {
                 webpushr('notification_status', function(status) {
-                    statusLine.innerText = "Stav systému: " + status.toUpperCase();
-                    log("Webpushr status: " + status);
+                    statusBadge.innerText = status.toUpperCase();
+                    log("Stav Webpushru: " + status);
                     if (status === 'granted') {
                         document.getElementById('sendCard').style.display = 'block';
                         document.getElementById('btnSend').style.display = 'block';
                     }
                 });
             } else {
-                log("Čekám na načtení SDK...");
-                setTimeout(updateStatus, 1000);
+                log("Hledám SDK...");
+                setTimeout(checkWebpushr, 1000);
             }
         }
+        checkWebpushr();
 
-        updateStatus();
-
-        // --- TLAČÍTKO 1: REGISTRACE ---
-        document.getElementById('testBtn').onclick = function() {
-            log("Kliknuto na registraci...");
-            statusLine.innerText = "ŽÁDÁM O POVOLENÍ...";
+        // --- FUNKCE PRO REGISTRACI ---
+        const handleRegister = (e) => {
+            if(e) e.preventDefault();
+            log("Požadavek na registraci odeslán...");
+            statusBadge.innerText = "PROSÍM ČEKEJ...";
 
             webpushr('fetch_subscription', function(result) {
-                log("Výsledek fetch: " + JSON.stringify(result));
+                log("Výsledek: " + JSON.stringify(result));
                 if(result.status === 'success') {
-                    statusLine.innerHTML = "<span style='color:lime'>ÚSPĚCH! ✅</span>";
+                    statusBadge.innerHTML = "POVOLENO ✅";
+                    statusBadge.style.color = "#00ff00";
                     document.getElementById('sendCard').style.display = 'block';
                     document.getElementById('btnSend').style.display = 'block';
+                    alert("Úspěch! iPhone notifikace přijal.");
                 } else {
-                    statusLine.innerHTML = "<span style='color:red'>CHYBA! ❌</span>";
-                    alert("Selhalo to: " + result.description);
+                    statusBadge.innerHTML = "CHYBA ❌";
+                    alert("Chyba: " + result.description);
                 }
             });
         };
 
-        // --- TLAČÍTKO 2: ODESLÁNÍ ---
+        // Podpora pro klik i dotyk (iOS fix)
+        const regBtn = document.getElementById('testBtn');
+        regBtn.addEventListener('click', handleRegister);
+        regBtn.addEventListener('touchend', handleRegister);
+
+        // --- FUNKCE PRO ODESLÁNÍ ---
         document.getElementById('btnSend').onclick = async function() {
-            log("Pokus o odeslání přes REST API...");
+            log("Odesílám přes tvé REST API...");
             const body = {
-                "title": "TEST v2.0 FUNGUJE!",
-                "message": "Pokud to vidíš, nové klíče jsou v pořádku.",
+                "title": "TEST v2.0 - FUNGUJE TO!",
+                "message": "Nové klíče jsou v pořádku. Píp!",
                 "target_url": "https://sazkynadeje.github.io/SazkovkaNadeje/",
                 "urgency": "high"
             };
@@ -118,9 +129,9 @@
                 });
                 const data = await response.json();
                 log("Odpověď API: " + JSON.stringify(data));
-                if(data.status === 'success') alert("Notifikace odeslána! Sleduj displej.");
+                if(data.status === 'success') alert("Zpráva odeslána všem!");
             } catch (e) {
-                log("KRITICKÁ CHYBA API: " + e);
+                log("CHYBA API: " + e);
             }
         };
     </script>
