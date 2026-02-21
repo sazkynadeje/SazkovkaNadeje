@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEST NOTIFIKACÍ</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="IMG_8429.png">
+
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #eee; }
+        #testBtn { padding: 20px; font-size: 20px; background: green; color: white; border: none; border-radius: 10px; cursor: pointer; }
+        .status { margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: #fff; }
+    </style>
+</head>
+<body>
+
+    <h1>🚨 Test Notifikací v2.0</h1>
+    <p>Ujisti se, že jsi tuto stránku přidal <b>NA PLOCHU</b>.</p>
+    
+    <button id="testBtn">AKTIVOVAT PUSH</button>
+
+    <div class="status" id="stat">Čekám na načtení systému...</div>
+
+    <script>
+    // 1. SDK Webpushru
+    (function(w,d, s, id) {
+        if(typeof(w.webpushr)!=='undefined') return;
+        w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};
+        var js, fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s); js.id = id;js.async=1;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+    }(window,document, 'script', 'webpushr-jssdk-alternative'));
+
+    // 2. Inicializace - použijeme relativní cestu, která včera fungovala
+    webpushr('init','BHnXQvMsyuIkh4upI3mpTYS-qF0EyFi-bkJXZZm9wobAMzWJzyAbx9iQHFIOlVrvj3lz7PtjxdL5vgZc6lz431c','webpushr-sw.js','/SazkovkaNadeje/');
+
+    // 3. Status po načtení
+    window.onload = function() {
+        setTimeout(function() {
+            if(typeof webpushr !== 'undefined') {
+                webpushr('notification_status', function(status) {
+                    document.getElementById('stat').innerText = "Aktuální stav: " + status;
+                });
+            } else {
+                document.getElementById('stat').innerText = "Chyba: Webpushr SDK se nenačetlo!";
+            }
+        }, 3000);
+    };
+
+    // 4. Samotná aktivace na kliknutí
+    document.getElementById('testBtn').onclick = function() {
+        document.getElementById('stat').innerText = "Zkouším se přihlásit...";
+        
+        webpushr('fetch_subscription', function(result) {
+            console.log(result);
+            if(result.status === 'success') {
+                document.getElementById('stat').innerText = "✅ ÚSPĚCH! Odběr aktivován.";
+                alert("Povedlo se! Teď zkus poslat test z Webpushr Dashboardu.");
+            } else {
+                document.getElementById('stat').innerText = "❌ CHYBA: " + result.description;
+                alert("Selhalo to: " + result.description);
+            }
+        });
+    };
+    </script>
+</body>
+</html>
