@@ -4,109 +4,105 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KANCELÁŘ NADĚJE v2.0</title>
-
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="IMG_8429.png">
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
     <style>
-        :root { --neon: #00f2ff; --dark: #0f172a; --card-bg: rgba(255, 255, 255, 0.05); }
-        body { background-color: var(--dark); color: #ffffff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; text-align: center; -webkit-tap-highlight-color: transparent; }
-        
-        /* Logo a Bank */
-        .header-logo { max-width: 450px; width: 90%; margin: 20px 0 40px 0; filter: drop-shadow(0 0 10px var(--neon)); }
-        .bank-box { background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,242,255,0.08) 100%); border: 1px solid rgba(0, 242, 255, 0.4); border-radius: 30px; padding: 30px; margin-bottom: 40px; }
-        .bank-main-val { font-size: 3.2em; font-weight: 900; text-shadow: 0 0 20px var(--neon); }
-        
-        /* Tlačítka */
-        .btn-stats { display: inline-block; margin-bottom: 40px; padding: 16px 35px; border: 1px solid var(--neon); color: var(--neon); text-decoration: none; border-radius: 100px; font-weight: 900; text-transform: uppercase; }
-        #enableNotifications { display: none; margin-bottom: 30px; padding: 15px 25px; background: transparent; border: 2px solid var(--neon); color: var(--neon); border-radius: 100px; font-weight: 900; cursor: pointer; box-shadow: 0 0 15px var(--neon); }
-        
-        /* Zápasy */
-        #matchList { width: 100%; max-width: 650px; padding-bottom: 120px; }
-        .match-card { background: var(--card-bg); border-radius: 35px; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 35px; padding: 30px; }
-        .flags-wrapper { display: flex; justify-content: center; align-items: center; gap: 25px; margin: 25px 0; }
-        .flag-img { width: 110px; border-radius: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        .vs-circle { background: var(--neon); color: var(--dark); border-radius: 50%; width: 50px; height: 50px; line-height: 50px; font-weight: 900; }
-        
-        /* Modál notifikací */
+        :root { --neon: #00f2ff; --dark: #0f172a; }
+        body { background-color: var(--dark); color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 15px; }
+        .header-logo { max-width: 400px; width: 80%; margin: 20px 0; filter: drop-shadow(0 0 10px var(--neon)); }
+        .bank-box { border: 1px solid var(--neon); border-radius: 25px; padding: 25px; margin-bottom: 20px; box-shadow: 0 0 15px rgba(0,242,255,0.2); }
+        #enableNotifications { display: none; margin-bottom: 20px; padding: 18px; background: transparent; border: 2px solid var(--neon); color: var(--neon); border-radius: 100px; font-weight: bold; width: 100%; max-width: 300px; cursor: pointer; }
         #notifModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; align-items: center; justify-content: center; }
-        .modal-content { background: #1e293b; padding: 30px; border-radius: 30px; border: 2px solid var(--neon); max-width: 280px; text-align: center; }
-        .modal-btn { width: 100%; padding: 15px; margin-top: 15px; border-radius: 15px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; }
-        .btn-ano { background: var(--neon); color: var(--dark); }
-        .btn-ne { background: rgba(255,255,255,0.1); color: white; }
+        .modal-content { background: #1e293b; padding: 30px; border-radius: 30px; border: 2px solid var(--neon); max-width: 280px; }
+        .modal-btn { width: 100%; padding: 15px; margin-top: 10px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-ano { background: var(--neon); color: #000; }
+        #matchList { margin-top: 20px; }
     </style>
 </head>
 <body>
 
-    <a href="admin.html" style="position:fixed; top:20px; right:20px; width:48px; height:48px; border:2px solid var(--neon); border-radius:50%; display:flex; align-items:center; justify-content:center; text-decoration:none; z-index:9999; background:rgba(15,23,42,0.9);">⚙️</a>
+    <script>
+    (function(w,d, s, id) {
+        if(typeof(w.webpushr)!=='undefined') return;
+        w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};
+        var js, fjs = d.getElementsByTagName(s)[0];
+        js = d.createElement(s); js.id = id;js.async=1;
+        js.src = "https://cdn.webpushr.com/app.min.js";
+        fjs.parentNode.appendChild(js);
+    }(window,document, 'script', 'webpushr-jssdk-alternative'));
 
-    <img src="IMG_8429.png" class="header-logo" alt="LOGO">
+    webpushr('init','BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w','webpushr-sw.js','/SazkovkaNadeje/');
+    webpushr('setup', { 'in_app_notification': false, 'onsite_messaging': false });
+    </script>
+
+    <img src="IMG_8429.png" class="header-logo">
 
     <div class="bank-box">
-        <span style="opacity:0.5; font-size:0.75em; text-transform:uppercase; letter-spacing:2px;">Celkový bank</span>
-        <div class="bank-main-val"><span id="uiMainBank">0</span> Kč</div>
-        <div id="userWelcome" style="margin-top:15px; color:var(--neon); font-weight:bold;"></div>
+        <div style="font-size: 2.5em; font-weight: 900;"><span id="uiMainBank">0</span> Kč</div>
     </div>
 
     <button id="enableNotifications">🔔 ZAPNOUT OZNÁMENÍ</button>
-
-    <a href="statistiky.html" class="btn-stats">📊 ŽEBŘÍČKY A STATISTIKY</a>
 
     <div id="matchList">Načítám zápasy...</div>
 
     <div id="notifModal">
         <div class="modal-content">
-            <h2 style="color:var(--neon); margin-top:0;">NOTIFIKACE</h2>
-            <p>Chceš dostávat upozornění na góly a výsledky přímo na displej?</p>
+            <h2 style="color:var(--neon)">NOTIFIKACE</h2>
+            <p>Chceš dostávat upozornění na výsledky přímo na displej?</p>
             <button id="btnNotifYes" class="modal-btn btn-ano">ANO, CHCI</button>
-            <button id="btnNotifNo" class="modal-btn btn-ne">MOŽNÁ POZDĚJI</button>
         </div>
     </div>
 
-    <script type="module">
-        import { AuthService } from './js/auth.js';
-        import { DBService } from './js/database.js';
+    <script>
+        const btnNeon = document.getElementById('enableNotifications');
+        const modal = document.getElementById('notifModal');
+        const btnYes = document.getElementById('btnNotifYes');
 
-        let user = AuthService.getUser();
-        if (!user) {
-            const name = prompt("Vítej! Zadej své jméno:");
-            if (name) {
-                user = AuthService.setUser(name);
-                location.reload();
+        // Funkce, která vyvolá to okno (stejná jako v testu)
+        async function spustitOdber() {
+            console.log("Kliknuto na odběr");
+            if ('serviceWorker' in navigator) {
+                await navigator.serviceWorker.register('webpushr-sw.js');
             }
-        } else {
-            document.getElementById('userWelcome').innerText = `Hráč: ${user.name}`;
+            webpushr('fetch_subscription', function(result) {
+                if(result.status === 'success') {
+                    localStorage.setItem('notif_ok', '1');
+                    modal.style.display = 'none';
+                    btnNeon.style.display = 'none';
+                    alert("ÚSPĚCH! ✅");
+                } else {
+                    alert("Chyba: " + result.description);
+                }
+            });
         }
 
-        DBService.getBank(val => document.getElementById('uiMainBank').innerText = val);
-        
-        DBService.getMatches(zapasy => {
-            const container = document.getElementById('matchList');
-            container.innerHTML = "";
-            if (!zapasy) return;
+        // Eventy pro tlačítka (včetně touchend pro iPhone)
+        btnYes.onclick = spustitOdber;
+        btnYes.addEventListener('touchend', spustitOdber);
+        btnNeon.onclick = spustitOdber;
+        btnNeon.addEventListener('touchend', spustitOdber);
 
-            Object.entries(zapasy).forEach(([id, m]) => {
-                if(m.status === "vyhodnoceno") return;
-                const card = document.createElement('div');
-                card.className = "match-card";
-                card.innerHTML = `
-                    <div class="flags-wrapper">
-                        <div><img class="flag-img" src="https://flagcdn.com/w160/${m.kodD}.png"><br><small>${m.domaci}</small></div>
-                        <div class="vs-circle">VS</div>
-                        <div><img class="flag-img" src="https://flagcdn.com/w160/${m.kodH}.png"><br><small>${m.hoste}</small></div>
-                    </div>
-                `;
-                container.appendChild(card);
+        // Kontrola stavu po 2 vteřinách
+        setTimeout(() => {
+            const hotovo = localStorage.getItem('notif_ok');
+            if(!hotovo) modal.style.display = 'flex';
+            
+            webpushr('notification_status', function(status) {
+                if(status !== 'granted') btnNeon.style.display = 'inline-block';
             });
-        });
+        }, 2000);
     </script>
 
-    <script src="notifications.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script type="module">
+        import { DBService } from './js/database.js';
+        DBService.getBank(val => document.getElementById('uiMainBank').innerText = val);
+        // Tady si pak doplň zbytek své logiky zápasů...
+    </script>
 
 </body>
 </html>
