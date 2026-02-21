@@ -145,6 +145,23 @@
         }
 
         .timer-box { font-size: 0.9em; font-weight: 800; color: var(--neon); background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 100px; }
+
+        /* --- MODÁL PRO NOTIFIKACE --- */
+        #notifModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 10000; align-items: center; justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+        .modal-content {
+            background: #1e293b; padding: 40px 30px; border-radius: 40px; border: 2px solid var(--neon);
+            max-width: 320px; text-align: center; box-shadow: 0 0 50px var(--neon);
+        }
+        .modal-btn {
+            width: 100%; padding: 18px; margin-top: 15px; border-radius: 20px; border: none;
+            font-weight: 900; text-transform: uppercase; cursor: pointer; font-size: 0.9em;
+        }
+        .btn-ano { background: var(--neon); color: var(--dark); box-shadow: 0 0 15px var(--neon); }
+        .btn-ne { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5); }
     </style>
 </head>
 <body>
@@ -167,6 +184,15 @@
 
     <div id="fabCart" class="fab-cart">
         🎟️ <div id="fabBadge" class="badge">0</div>
+    </div>
+
+    <div id="notifModal">
+        <div class="modal-content">
+            <h2 style="color:var(--neon); margin-top:0;">GÓLY & VÝSLEDKY</h2>
+            <p style="font-size:0.9em; opacity:0.8;">Chceš dostávat upozornění přímo na displej, když padne gól?</p>
+            <button class="modal-btn btn-ano" onclick="handleNotifChoice('ano')">ANO, CHCI PÍPAT</button>
+            <button class="modal-btn btn-ne" onclick="handleNotifChoice('ne')">NECHCI</button>
+        </div>
     </div>
 
     <script type="module">
@@ -277,39 +303,52 @@
         fjs.parentNode.appendChild(js);
     }(window,document, 'script', 'webpushr-jssdk-alternative'));
 
-    // Inicializace s přesnou cestou k SW
+    // Inicializace s agresivnější cestou k SW
     webpushr('init','BHnXQvMsyuIkh4upI3mpTYS-qF0EyFi-bkJXZZm9wobAMzWJzyAbx9iQHFIOlVrvj3lz7PtjxdL5vgZc6lz431c','/SazkovkaNadeje/webpushr-sw.js','/SazkovkaNadeje/');
 
-    // OPRAVA: Vypnutí zvonečku a vnitřních zpráv
     webpushr('setup', { 
         'in_app_notification': false, 
         'onsite_messaging': false 
     });
 
+    // Logika pro modál a tlačítko
     window.addEventListener('load', function() {
         setTimeout(function() {
-            if(typeof webpushr !== 'undefined') {
-                webpushr('notification_status', function(status) {
-                    console.log("Webpushr status:", status);
-                    if(status === 'default') {
-                        document.getElementById('enableNotifications').style.display = 'inline-block';
-                    } else {
-                        document.getElementById('enableNotifications').style.display = 'none';
-                    }
-                });
+            const choice = localStorage.getItem('notifChoice');
+            if (!choice && typeof webpushr !== 'undefined') {
+                document.getElementById('notifModal').style.display = 'flex';
             }
-        }, 2000);
+            
+            // Záložní zobrazení neonového tlačítka, pokud status není granted
+            webpushr('notification_status', function(status) {
+                if(status !== 'granted') {
+                    document.getElementById('enableNotifications').style.display = 'inline-block';
+                }
+            });
+        }, 4000); // Čekáme 4 sekundy kvůli promptu na jméno
     });
 
+    window.handleNotifChoice = function(choice) {
+        if (choice === 'ano') {
+            webpushr('fetch_subscription', function(result) {
+                if(result.status === 'success') {
+                    localStorage.setItem('notifChoice', 'ano');
+                    document.getElementById('notifModal').style.display = 'none';
+                    document.getElementById('enableNotifications').style.display = 'none';
+                    alert("Odběr aktivován! ⚽");
+                } else {
+                    alert("Chyba: " + result.description + "\n\nTip: Musíš mít web přidaný na ploše přes 'Sdílet -> Přidat na plochu'!");
+                    document.getElementById('notifModal').style.display = 'none';
+                }
+            });
+        } else {
+            localStorage.setItem('notifChoice', 'ne');
+            document.getElementById('notifModal').style.display = 'none';
+        }
+    };
+
     document.getElementById('enableNotifications').onclick = function() {
-        webpushr('fetch_subscription', function(result) {
-            if(result.status === 'success') {
-                alert("Odběr aktivován! ⚽");
-                document.getElementById('enableNotifications').style.display = 'none';
-            } else {
-                alert("Nepodařilo se aktivovat. Ujisti se, že máš web na ploše a iOS 16.4+");
-            }
-        });
+        handleNotifChoice('ano');
     };
     </script>
 </body>
