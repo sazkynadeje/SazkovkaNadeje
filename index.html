@@ -302,24 +302,29 @@
         fjs.parentNode.appendChild(js);
     }(window,document, 'script', 'webpushr-jssdk-alternative'));
 
-    webpushr('init','BHnXQvMsyuIkh4upI3mpTYS-qF0EyFi-bkJXZZm9wobAMzWJzyAbx9iQHFIOlVrvj3lz7PtjxdL5vgZc6lz431c','/SazkovkaNadeje/webpushr-sw.js','/SazkovkaNadeje/');
+    // --- KLÍČOVÁ ZMĚNA: RELATIVNÍ CESTY BEZ LOMÍTEK (Jako včera) ---
+    webpushr('init','BHnXQvMsyuIkh4upI3mpTYS-qF0EyFi-bkJXZZm9wobAMzWJzyAbx9iQHFIOlVrvj3lz7PtjxdL5vgZc6lz431c','webpushr-sw.js','/SazkovkaNadeje/');
 
     webpushr('setup', { 
         'in_app_notification': false, 
         'onsite_messaging': false 
     });
 
-    // --- AGRESIVNÍ LOGIKA NOTIFIKACÍ ---
-    const activatePush = () => {
+    // --- FUNKCE PRO AKTIVACI ---
+    const activatePush = (e) => {
+        if(e) e.preventDefault(); 
+        console.log("Pokus o aktivaci...");
+        
         if(typeof webpushr !== 'undefined') {
             webpushr('fetch_subscription', function(result) {
+                console.log("Webpushr výsledek:", result);
                 if(result.status === 'success') {
                     localStorage.setItem('notifChoice', 'ano');
                     document.getElementById('notifModal').style.display = 'none';
                     document.getElementById('enableNotifications').style.display = 'none';
                     alert("Odběr aktivován! ⚽");
                 } else {
-                    alert("Aktivace selhala. Ujisti se, že máš web přidaný NA PLOŠE!");
+                    alert("Chyba: " + result.description + "\n\nUjisti se, že máš web přidaný NA PLOŠE!");
                     document.getElementById('notifModal').style.display = 'none';
                 }
             });
@@ -329,27 +334,34 @@
     window.addEventListener('load', function() {
         setTimeout(function() {
             const choice = localStorage.getItem('notifChoice');
+            const modal = document.getElementById('notifModal');
+            const neonBtn = document.getElementById('enableNotifications');
+
             if(!choice) {
-                document.getElementById('notifModal').style.display = 'flex';
+                modal.style.display = 'flex';
             }
 
             if(typeof webpushr !== 'undefined') {
                 webpushr('notification_status', function(status) {
                     if(status !== 'granted' && choice !== 'ne') {
-                        document.getElementById('enableNotifications').style.display = 'inline-block';
+                        neonBtn.style.display = 'inline-block';
                     }
                 });
             }
-        }, 4000);
-    });
+            
+            // Listenery pro iOS (click i touchend pro jistotu)
+            const btnYes = document.getElementById('btnNotifYes');
+            btnYes.addEventListener('click', activatePush);
+            btnYes.addEventListener('touchend', activatePush);
+            
+            neonBtn.addEventListener('click', activatePush);
+            neonBtn.addEventListener('touchend', activatePush);
 
-    // listeners místo onclick pro iOS stabilitu
-    document.getElementById('btnNotifYes').addEventListener('click', activatePush);
-    document.getElementById('enableNotifications').addEventListener('click', activatePush);
-    
-    document.getElementById('btnNotifNo').addEventListener('click', () => {
-        localStorage.setItem('notifChoice', 'ne');
-        document.getElementById('notifModal').style.display = 'none';
+            document.getElementById('btnNotifNo').addEventListener('click', () => {
+                localStorage.setItem('notifChoice', 'ne');
+                modal.style.display = 'none';
+            });
+        }, 4000);
     });
     </script>
 </body>
