@@ -8,55 +8,57 @@
     fjs.parentNode.appendChild(js);
 }(window,document, 'script', 'webpushr-jssdk-alternative'));
 
-// Inicializace Webpushru
+// Inicializace s tvým funkčním klíčem
 webpushr('init','BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w','webpushr-sw.js','/SazkovkaNadeje/');
 webpushr('setup', { 'in_app_notification': false, 'onsite_messaging': false });
 
-// Hlavní funkce pro aktivaci
-async function activatePush() {
-    console.log("Aktivuji proces odběru...");
+// Funkce, která vyvolá dotaz na povolení (přesně jako v testu)
+async function spustitOdber() {
+    console.log("Spouštím odběr...");
     try {
+        // iPhone potřebuje nejdřív probudit Service Worker
         if ('serviceWorker' in navigator) {
             await navigator.serviceWorker.register('webpushr-sw.js');
         }
+        
         webpushr('fetch_subscription', function(result) {
             if(result.status === 'success') {
-                localStorage.setItem('notifHOTOVO', 'ano');
-                if(document.getElementById('notifModal')) document.getElementById('notifModal').style.display = 'none';
-                if(document.getElementById('enableNotifications')) document.getElementById('enableNotifications').style.display = 'none';
-                alert("ÚSPĚCH! ✅ Notifikace jsou nastaveny.");
+                localStorage.setItem('notif_hotovo', 'ano');
+                document.getElementById('notifModal').style.display = 'none';
+                document.getElementById('enableNotifications').style.display = 'none';
+                alert("ÚSPĚCH! ✅ Notifikace aktivovány.");
             } else {
-                alert("CHYBA: " + result.description + "\n\nTip: Otevři web z PLOCHY iPhonu!");
+                alert("CHYBA: " + result.description);
             }
         });
-    } catch (e) { console.error("SW fail:", e); }
+    } catch (e) { console.error(e); }
 }
 
-// Kontrola při načtení
+// Kontrola stavu při načtení
 window.addEventListener('load', () => {
     setTimeout(() => {
-        const status = localStorage.getItem('notifHOTOVO');
-        const modal = document.getElementById('notifModal');
-        const neonBtn = document.getElementById('enableNotifications');
-
-        if(!status && modal) modal.style.display = 'flex';
-
-        // Propojení tlačítek, pokud v indexu existují
-        const yesBtn = document.getElementById('btnNotifYes');
-        const noBtn = document.getElementById('btnNotifNo');
-
-        if(yesBtn) {
-            yesBtn.onclick = activatePush;
-            yesBtn.ontouchend = activatePush;
+        const status = localStorage.getItem('notif_hotovo');
+        if(!status) {
+            document.getElementById('notifModal').style.display = 'flex';
         }
-        if(neonBtn) {
-            neonBtn.onclick = activatePush;
-            neonBtn.ontouchend = activatePush;
-        }
-        if(noBtn) {
-            noBtn.onclick = () => {
-                localStorage.setItem('notifHOTOVO', 'ne');
-                if(modal) modal.style.display = 'none';
+
+        webpushr('notification_status', function(s) {
+            if(s !== 'granted' && status !== 'ne') {
+                document.getElementById('enableNotifications').style.display = 'inline-block';
+            }
+        });
+
+        // Připojení na tlačítka v indexu
+        const btnYes = document.getElementById('btnNotifYes');
+        const btnNeon = document.getElementById('enableNotifications');
+        const btnNo = document.getElementById('btnNotifNo');
+
+        if(btnYes) { btnYes.onclick = spustitOdber; btnYes.addEventListener('touchend', spustitOdber); }
+        if(btnNeon) { btnNeon.onclick = spustitOdber; btnNeon.addEventListener('touchend', spustitOdber); }
+        if(btnNo) {
+            btnNo.onclick = () => {
+                localStorage.setItem('notif_hotovo', 'ne');
+                document.getElementById('notifModal').style.display = 'none';
             };
         }
     }, 3000);
