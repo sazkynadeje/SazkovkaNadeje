@@ -174,7 +174,7 @@
         import { DBService } from './js/database.js';
 
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+            navigator.serviceWorker.register('/SazkovkaNadeje/sw.js');
         }
 
         let cart = {};
@@ -277,9 +277,15 @@
         fjs.parentNode.appendChild(js);
     }(window,document, 'script', 'webpushr-jssdk-alternative'));
 
-    webpushr('init','BHnXQvMsyuIkh4upI3mpTYS-qF0EyFi-bkJXZZm9wobAMzWJzyAbx9iQHFIOlVrvj3lz7PtjxdL5vgZc6lz431c','https://sazkynadeje.github.io/SazkovkaNadeje/webpushr-sw.js','/SazkovkaNadeje/');
+    // Inicializace s přesnou cestou k SW
+    webpushr('init','BHnXQvMsyuIkh4upI3mpTYS-qF0EyFi-bkJXZZm9wobAMzWJzyAbx9iQHFIOlVrvj3lz7PtjxdL5vgZc6lz431c','/SazkovkaNadeje/webpushr-sw.js','/SazkovkaNadeje/');
 
-    // Logika pro tlačítko notifikací
+    // OPRAVA: Vypnutí zvonečku a vnitřních zpráv
+    webpushr('setup', { 
+        'in_app_notification': false, 
+        'onsite_messaging': false 
+    });
+
     window.addEventListener('load', function() {
         setTimeout(function() {
             if(typeof webpushr !== 'undefined') {
@@ -287,6 +293,8 @@
                     console.log("Webpushr status:", status);
                     if(status === 'default') {
                         document.getElementById('enableNotifications').style.display = 'inline-block';
+                    } else {
+                        document.getElementById('enableNotifications').style.display = 'none';
                     }
                 });
             }
