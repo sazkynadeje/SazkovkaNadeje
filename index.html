@@ -14,28 +14,28 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
-        /* --- DESIGN ZŮSTÁVÁ STEJNÝ --- */
         :root { --neon: #00f2ff; --dark: #0f172a; --card-bg: rgba(255, 255, 255, 0.05); }
-        body { background-color: var(--dark); color: #ffffff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; text-align: center; }
+        body { background-color: var(--dark); color: #ffffff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; text-align: center; -webkit-tap-highlight-color: transparent; }
+        
+        /* Logo a Bank */
         .header-logo { max-width: 450px; width: 90%; margin: 20px 0 40px 0; filter: drop-shadow(0 0 10px var(--neon)); }
         .bank-box { background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,242,255,0.08) 100%); border: 1px solid rgba(0, 242, 255, 0.4); border-radius: 30px; padding: 30px; margin-bottom: 40px; }
         .bank-main-val { font-size: 3.2em; font-weight: 900; text-shadow: 0 0 20px var(--neon); }
+        
+        /* Tlačítka */
         .btn-stats { display: inline-block; margin-bottom: 40px; padding: 16px 35px; border: 1px solid var(--neon); color: var(--neon); text-decoration: none; border-radius: 100px; font-weight: 900; text-transform: uppercase; }
+        #enableNotifications { display: none; margin-bottom: 30px; padding: 15px 25px; background: transparent; border: 2px solid var(--neon); color: var(--neon); border-radius: 100px; font-weight: 900; cursor: pointer; box-shadow: 0 0 15px var(--neon); }
+        
+        /* Zápasy */
         #matchList { width: 100%; max-width: 650px; padding-bottom: 120px; }
         .match-card { background: var(--card-bg); border-radius: 35px; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 35px; padding: 30px; }
         .flags-wrapper { display: flex; justify-content: center; align-items: center; gap: 25px; margin: 25px 0; }
-        .flag-img { width: 110px; border-radius: 10px; }
+        .flag-img { width: 110px; border-radius: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
         .vs-circle { background: var(--neon); color: var(--dark); border-radius: 50%; width: 50px; height: 50px; line-height: 50px; font-weight: 900; }
-        .details { display: none; padding-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 30px; text-align: left; }
-        .score-row { display: flex; justify-content: center; align-items: center; gap: 20px; }
-        .score-input { width: 85px; height: 75px; text-align: center; font-weight: 900; font-size: 2.2em; background: #000; border: 3px solid #334155; color: white; border-radius: 22px; }
-        .input-field { width: 100%; padding: 18px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: white; border-radius: 20px; margin-bottom: 20px; box-sizing: border-box; }
-        .btn-add-ticket { width: 100%; background: var(--neon); color: var(--dark); border: none; padding: 22px; border-radius: 20px; font-weight: 900; }
-        #enableNotifications { display: none; margin: 0 0 40px 0; padding: 15px 25px; background: transparent; border: 2px solid var(--neon); color: var(--neon); border-radius: 100px; font-weight: 900; box-shadow: 0 0 15px var(--neon); }
-        .fab-cart { position: fixed; bottom: 35px; right: 35px; width: 75px; height: 75px; background: var(--neon); color: var(--dark); border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 2em; z-index: 5000; }
-        .badge { position: absolute; top: -5px; right: -5px; background: #ff4444; color: white; width: 28px; height: 28px; border-radius: 50%; font-size: 0.45em; display: flex; align-items: center; justify-content: center; border: 3px solid var(--dark); }
+        
+        /* Modál notifikací */
         #notifModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; align-items: center; justify-content: center; }
-        .modal-content { background: #1e293b; padding: 30px; border-radius: 30px; border: 2px solid var(--neon); max-width: 300px; text-align: center; }
+        .modal-content { background: #1e293b; padding: 30px; border-radius: 30px; border: 2px solid var(--neon); max-width: 280px; text-align: center; }
         .modal-btn { width: 100%; padding: 15px; margin-top: 15px; border-radius: 15px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; }
         .btn-ano { background: var(--neon); color: var(--dark); }
         .btn-ne { background: rgba(255,255,255,0.1); color: white; }
@@ -44,27 +44,27 @@
 <body>
 
     <a href="admin.html" style="position:fixed; top:20px; right:20px; width:48px; height:48px; border:2px solid var(--neon); border-radius:50%; display:flex; align-items:center; justify-content:center; text-decoration:none; z-index:9999; background:rgba(15,23,42,0.9);">⚙️</a>
-    <img src="IMG_8429.png" class="header-logo">
+
+    <img src="IMG_8429.png" class="header-logo" alt="LOGO">
 
     <div class="bank-box">
-        <span style="opacity:0.5; font-size:0.75em; text-transform:uppercase;">Celkový bank v hře</span>
+        <span style="opacity:0.5; font-size:0.75em; text-transform:uppercase; letter-spacing:2px;">Celkový bank</span>
         <div class="bank-main-val"><span id="uiMainBank">0</span> Kč</div>
         <div id="userWelcome" style="margin-top:15px; color:var(--neon); font-weight:bold;"></div>
     </div>
 
-    <button id="enableNotifications">🔔 CHCI NOTIFIKACE O GÓLECH</button>
+    <button id="enableNotifications">🔔 ZAPNOUT OZNÁMENÍ</button>
+
     <a href="statistiky.html" class="btn-stats">📊 ŽEBŘÍČKY A STATISTIKY</a>
 
     <div id="matchList">Načítám zápasy...</div>
 
-    <div id="fabCart" class="fab-cart">🎟️ <div id="fabBadge" class="badge">0</div></div>
-
     <div id="notifModal">
         <div class="modal-content">
-            <h2 style="color:var(--neon)">NOTIFIKACE</h2>
+            <h2 style="color:var(--neon); margin-top:0;">NOTIFIKACE</h2>
             <p>Chceš dostávat upozornění na góly a výsledky přímo na displej?</p>
             <button id="btnNotifYes" class="modal-btn btn-ano">ANO, CHCI</button>
-            <button id="btnNotifNo" class="modal-btn btn-ne">NECHCI</button>
+            <button id="btnNotifNo" class="modal-btn btn-ne">MOŽNÁ POZDĚJI</button>
         </div>
     </div>
 
@@ -72,145 +72,41 @@
         import { AuthService } from './js/auth.js';
         import { DBService } from './js/database.js';
 
-        // --- OPRAVA: ODSTRANĚNA STARÁ REGISTRACE sw.js ---
-        // Už se to nebudete tlouct s Webpushrem.
-
-        let cart = {};
         let user = AuthService.getUser();
         if (!user) {
-            const name = prompt("Vítej! Zadej své jméno pro sázky:");
-            if (name) { user = AuthService.setUser(name); location.reload(); }
+            const name = prompt("Vítej! Zadej své jméno:");
+            if (name) {
+                user = AuthService.setUser(name);
+                location.reload();
+            }
         } else {
             document.getElementById('userWelcome').innerText = `Hráč: ${user.name}`;
         }
 
         DBService.getBank(val => document.getElementById('uiMainBank').innerText = val);
+        
         DBService.getMatches(zapasy => {
             const container = document.getElementById('matchList');
             container.innerHTML = "";
             if (!zapasy) return;
+
             Object.entries(zapasy).forEach(([id, m]) => {
                 if(m.status === "vyhodnoceno") return;
                 const card = document.createElement('div');
                 card.className = "match-card";
-                card.onclick = () => {
-                    const det = document.getElementById(`detail-${id}`);
-                    det.style.display = det.style.display === 'block' ? 'none' : 'block';
-                };
                 card.innerHTML = `
                     <div class="flags-wrapper">
                         <div><img class="flag-img" src="https://flagcdn.com/w160/${m.kodD}.png"><br><small>${m.domaci}</small></div>
                         <div class="vs-circle">VS</div>
                         <div><img class="flag-img" src="https://flagcdn.com/w160/${m.kodH}.png"><br><small>${m.hoste}</small></div>
                     </div>
-                    <div id="detail-${id}" class="details" onclick="event.stopPropagation()">
-                        <div class="score-row">
-                            <input type="number" id="scD-${id}" class="score-input" placeholder="0">
-                            <span style="font-size:2.5em; font-weight:900; color:var(--neon)">:</span>
-                            <input type="number" id="scH-${id}" class="score-input" placeholder="0">
-                        </div>
-                        <input type="text" id="striker-${id}" class="input-field" placeholder="Střelec (příjmení)">
-                        <button class="btn-add-ticket" id="add-btn-${id}">PŘIDAT NA TIKET (20 Kč)</button>
-                    </div>
                 `;
                 container.appendChild(card);
-                document.getElementById(`add-btn-${id}`).onclick = () => {
-                    const sD = document.getElementById(`scD-${id}`).value;
-                    const sH = document.getElementById(`scH-${id}`).value;
-                    const str = document.getElementById(`striker-${id}`).value;
-                    if(sD === "" || sH === "" || !str) return alert("Vyplň vše!");
-                    cart[id] = { tip: `${sD}:${sH}`, strelec: str, skryt: false };
-                    updateFAB();
-                    document.getElementById(`detail-${id}`).style.display = 'none';
-                };
             });
         });
-
-        function updateFAB() {
-            const count = Object.keys(cart).length;
-            if(count > 0) {
-                document.getElementById('fabCart').style.display = 'flex';
-                document.getElementById('fabBadge').innerText = count;
-            }
-        }
-
-        document.getElementById('fabCart').onclick = async () => {
-            if (confirm("Odeslat tiket?")) {
-                await DBService.sendTicket(cart);
-                alert("Tiket odeslán!");
-                location.reload();
-            }
-        };
     </script>
 
-    <script>
-    // --- WEBPUSHR SDK ---
-    (function(w,d, s, id) {
-        if(typeof(w.webpushr)!=='undefined') return;
-        w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};
-        var js, fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s); js.id = id;js.async=1;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-    }(window,document, 'script', 'webpushr-jssdk-alternative'));
+    <script src="notifications.js"></script>
 
-    webpushr('init','BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w','webpushr-sw.js','/SazkovkaNadeje/');
-
-    webpushr('setup', { 'in_app_notification': false, 'onsite_messaging': false });
-
-    // --- FUNKCE PRO AKTIVACI (PŘESNĚ JAKO V TESTU) ---
-    const activatePush = async (e) => {
-        if(e) e.preventDefault();
-        const modal = document.getElementById('notifModal');
-        
-        try {
-            // Registrace SW předem pro iPhone
-            if ('serviceWorker' in navigator) {
-                await navigator.serviceWorker.register('webpushr-sw.js', { scope: '/SazkovkaNadeje/' });
-            }
-
-            webpushr('fetch_subscription', function(result) {
-                if(result.status === 'success') {
-                    localStorage.setItem('notifChoice', 'ano');
-                    modal.style.display = 'none';
-                    document.getElementById('enableNotifications').style.display = 'none';
-                    alert("Odběr aktivován! ⚽");
-                } else {
-                    alert("Chyba: " + result.description + "\n\nTip: Musíš mít web přidaný na ploše!");
-                    modal.style.display = 'none';
-                }
-            });
-        } catch (err) { console.error(err); }
-    };
-
-    window.addEventListener('load', function() {
-        setTimeout(function() {
-            const choice = localStorage.getItem('notifChoice');
-            if(!choice) document.getElementById('notifModal').style.display = 'flex';
-
-            if(typeof webpushr !== 'undefined') {
-                webpushr('notification_status', function(status) {
-                    if(status !== 'granted' && choice !== 'ne') {
-                        document.getElementById('enableNotifications').style.display = 'inline-block';
-                    }
-                });
-            }
-            
-            // Listenery pro iOS
-            const btnYes = document.getElementById('btnNotifYes');
-            btnYes.addEventListener('click', activatePush);
-            btnYes.addEventListener('touchend', activatePush);
-            
-            const btnNeon = document.getElementById('enableNotifications');
-            btnNeon.addEventListener('click', activatePush);
-            btnNeon.addEventListener('touchend', activatePush);
-
-            document.getElementById('btnNotifNo').onclick = () => {
-                localStorage.setItem('notifChoice', 'ne');
-                document.getElementById('notifModal').style.display = 'none';
-            };
-        }, 4000);
-    });
-    </script>
 </body>
 </html>
