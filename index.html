@@ -3,29 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TEST NOTIFIKACÍ</title>
-    
+    <title>NOVÁ SÁZKOVKA TEST</title>
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="IMG_8429.png">
-
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background: #eee; }
-        #testBtn { padding: 20px; font-size: 20px; background: green; color: white; border: none; border-radius: 10px; cursor: pointer; }
-        .status { margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: #fff; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 30px; background: #0f172a; color: white; }
+        .card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 25px; border: 1px solid #00f2ff; margin-bottom: 20px; }
+        button { width: 100%; padding: 20px; margin: 10px 0; border-radius: 15px; border: none; font-weight: bold; font-size: 1em; cursor: pointer; }
+        #btnReg { background: #00f2ff; color: #000; }
+        #btnSend { background: #ff00ff; color: #fff; display: none; }
+        .status { font-size: 0.9em; opacity: 0.7; margin-top: 10px; word-break: break-all; }
     </style>
 </head>
 <body>
 
-    <h1>🚨 Test Notifikací v2.0</h1>
-    <p>Ujisti se, že jsi tuto stránku přidal <b>NA PLOCHU</b>.</p>
-    
-    <button id="testBtn">AKTIVOVAT PUSH</button>
+    <div class="card">
+        <h2>1. KROK: PŘIHLÁŠENÍ</h2>
+        <button id="btnReg">AKTIVOVAT ODBĚR</button>
+        <div class="status" id="statReg">Čekám...</div>
+    </div>
 
-    <div class="status" id="stat">Čekám na načtení systému...</div>
+    <div class="card" id="sendCard" style="display:none;">
+        <h2>2. KROK: TEST ODESLÁNÍ</h2>
+        <p>Teď zkusíme, jestli ty nové API klíče fungují.</p>
+        <button id="btnSend">POSLAT TEST SOBĚ I OSTATNÍM</button>
+        <div class="status" id="statSend"></div>
+    </div>
 
     <script>
-    // 1. SDK Webpushru
+    // --- SDK INICIALIZACE ---
     (function(w,d, s, id) {
         if(typeof(w.webpushr)!=='undefined') return;
         w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};
@@ -35,36 +41,63 @@
         fjs.parentNode.appendChild(js);
     }(window,document, 'script', 'webpushr-jssdk-alternative'));
 
-    // 2. Inicializace - použijeme relativní cestu, která včera fungovala
-    webpushr('init','BHnXQvMsyuIkh4upI3mpTYS-qF0EyFi-bkJXZZm9wobAMzWJzyAbx9iQHFIOlVrvj3lz7PtjxdL5vgZc6lz431c','webpushr-sw.js','/SazkovkaNadeje/');
+    // TVŮJ NOVÝ PUBLIC KEY
+    webpushr('init','BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w','webpushr-sw.js','/SazkovkaNadeje/');
 
-    // 3. Status po načtení
+    webpushr('setup', { 'in_app_notification': false, 'onsite_messaging': false });
+
     window.onload = function() {
         setTimeout(function() {
             if(typeof webpushr !== 'undefined') {
                 webpushr('notification_status', function(status) {
-                    document.getElementById('stat').innerText = "Aktuální stav: " + status;
+                    document.getElementById('statReg').innerText = "Stav: " + status;
+                    if(status === 'granted') document.getElementById('sendCard').style.display = 'block';
                 });
-            } else {
-                document.getElementById('stat').innerText = "Chyba: Webpushr SDK se nenačetlo!";
             }
         }, 3000);
     };
 
-    // 4. Samotná aktivace na kliknutí
-    document.getElementById('testBtn').onclick = function() {
-        document.getElementById('stat').innerText = "Zkouším se přihlásit...";
-        
+    // --- REGISTRACE ODBĚRU ---
+    document.getElementById('btnReg').onclick = function() {
         webpushr('fetch_subscription', function(result) {
-            console.log(result);
             if(result.status === 'success') {
-                document.getElementById('stat').innerText = "✅ ÚSPĚCH! Odběr aktivován.";
-                alert("Povedlo se! Teď zkus poslat test z Webpushr Dashboardu.");
+                document.getElementById('statReg').innerHTML = "<b style='color:lime'>ÚSPĚCH! ✅</b>";
+                document.getElementById('sendCard').style.display = 'block';
+                document.getElementById('btnSend').style.display = 'block';
             } else {
-                document.getElementById('stat').innerText = "❌ CHYBA: " + result.description;
-                alert("Selhalo to: " + result.description);
+                document.getElementById('statReg').innerHTML = "<b style='color:red'>CHYBA:</b> " + result.description;
             }
         });
+    };
+
+    // --- ODESLÁNÍ TESTU PŘES TVOJE NOVÁ REST API ---
+    document.getElementById('btnSend').onclick = async function() {
+        const stat = document.getElementById('statSend');
+        stat.innerText = "Odesílám přes API...";
+
+        const body = {
+            "title": "TEST FUNGUJE! ⚽",
+            "message": "Pokud to vidíš, nové klíče jsou správně.",
+            "target_url": "https://sazkynadeje.github.io/SazkovkaNadeje/",
+            "urgency": "high"
+        };
+
+        try {
+            const response = await fetch('https://api.webpushr.com/v1/notification/send/all', {
+                method: 'POST',
+                headers: {
+                    'webpushrKey': 'cc80b06b1a513c4ac1227033bda09e2a',
+                    'webpushrAuthToken': '119013',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+            const data = await response.json();
+            stat.innerText = "Výsledek: " + data.status;
+            if(data.status === 'success') alert("Odesláno! Teď čekej, jestli to pípne.");
+        } catch (e) {
+            stat.innerText = "Chyba API: " + e;
+        }
     };
     </script>
 </body>
