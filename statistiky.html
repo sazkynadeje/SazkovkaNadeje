@@ -9,7 +9,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <style>
-        /* Tvé barvy a styly ze statistik */
         :root { --neon: #00f2ff; --dark: #0f172a; --gold: #ffd700; --points: #ff00ff; }
         body { background: var(--dark); color: white; font-family: sans-serif; padding: 15px; text-align: center; }
         .stat-card { background: rgba(255,255,255,0.03); border-radius: 25px; border: 1px solid rgba(0,242,255,0.15); margin-bottom: 30px; padding: 20px; }
@@ -40,7 +39,6 @@
     <script type="module">
         import { DBService } from './js/database.js';
 
-        // Načtení dat a vykreslení tabulek
         DBService.getStats(stats => {
             renderTable('leaderboard-total', stats, 'celkoveBody', ' NB');
             renderTable('leaderboard-money', stats, 'vyhry', ' Kč');
@@ -50,7 +48,6 @@
             const container = document.getElementById(elementId);
             container.innerHTML = "";
 
-            // Seřazení hráčů podle hodnoty
             const sortedPlayers = Object.entries(stats)
                 .map(([name, data]) => ({ name, value: data[property] || 0 }))
                 .filter(p => p.value > 0)
