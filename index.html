@@ -20,11 +20,11 @@
             fjs.parentNode.appendChild(js);
         }(window,document, 'script', 'webpushr-jssdk-alternative'));
 
-        // Inicializace s tvými údaji a cestou k SW
-        webpushr('init','BNKxlbjAIXHY6C5JLpgEZhPJd_gdkLkdz_ebqjnCZXj37WJJsdU7Rowj_nw38R4rYR_qf4LCvr8uO_0Y1L0cAAU','https://sazkynadeje.github.io/SazkovkaNadeje/webpushr-sw.js','/SazkovkaNadeje/');
+        // INICIALIZACE - RELATIVNÍ CESTY PRO GITHUB PAGES
+        webpushr('init','BNKxlbjAIXHY6C5JLpgEZhPJd_gdkLkdz_ebqjnCZXj37WJJsdU7Rowj_nw38R4rYR_qf4LCvr8uO_0Y1L0cAAU','webpushr-sw.js','./');
         
-        // Zákaz automatického okna, abychom mohli použít náš neonový design
-        webpushr('setup',{'auto_prompt':false});
+        // ZÁKAZ AUTOMATICKÉHO OKNA (Tohle je ten důležitý řádek!)
+        webpushr('setup', { 'auto_prompt': false });
     </script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -36,7 +36,7 @@
         .bank-box { background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,242,255,0.08) 100%); border: 1px solid rgba(0, 242, 255, 0.4); border-radius: 30px; padding: 25px; margin-bottom: 30px; }
         .bank-main-val { font-size: 2.8em; font-weight: 900; text-shadow: 0 0 20px var(--neon); }
         #matchList { width: 100%; max-width: 600px; margin: 0 auto; padding-bottom: 100px; }
-        .match-card { background: rgba(255, 255, 255, 0.05); border-radius: 30px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 25px; padding: 25px; text-align: center; }
+        .match-card { background: rgba(255, 255, 255, 0.05); border-radius: 30px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 25px; padding: 25px; }
         .flags-wrapper { display: flex; justify-content: center; align-items: center; gap: 20px; margin: 15px 0; }
         .flag-img { width: 90px; border-radius: 8px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
         .vs-circle { background: var(--neon); color: var(--dark); border-radius: 50%; width: 40px; height: 40px; line-height: 40px; font-weight: 900; }
@@ -114,7 +114,7 @@
                     det.style.display = det.style.display === 'block' ? 'none' : 'block';
                 };
                 card.innerHTML = `
-                    <div style="color:var(--neon); font-size:0.8em; margin-bottom:10px;">ZÁPAS ID: ${id.substring(0,4)}</div>
+                    <div style="color:var(--neon); font-size:0.8em; margin-bottom:10px;">ZÁPAS</div>
                     <div class="flags-wrapper">
                         <div><img class="flag-img" src="https://flagcdn.com/w160/${m.kodD}.png"><br><small>${m.domaci}</small></div>
                         <div class="vs-circle">VS</div>
