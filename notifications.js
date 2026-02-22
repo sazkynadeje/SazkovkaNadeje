@@ -1,14 +1,13 @@
-// notifications.js - Kompletní správa notifikací pro iPhony
+// js/notifications.js - Kompletní správa notifikací pro iPhony a PC
 (function() {
     // 1. OKAMŽITÁ KONTROLA PAMĚTI
-    // Pokud uživatel už klikl na "ANO" nebo "POZDĚJI", skript se okamžitě ukončí
     const notifStatus = localStorage.getItem('sazka_notif_v3');
     if (notifStatus === 'ano' || notifStatus === 'skip') {
         console.log("Notifikace již vyřešeny, skript končí.");
         return; 
     }
 
-    // 2. CSS STYLY (Vše schované v JS, aby index zůstal čistý)
+    // 2. CSS STYLY
     const style = document.createElement('style');
     style.innerHTML = `
         #n_box_root { 
@@ -63,31 +62,30 @@
         fjs.parentNode.appendChild(js);
     }(window,document, 'script', 'webpushr-jssdk-alternative'));
 
+    // OPRAVENÝ KLÍČ PRO TVOJI WEBPUSHR APLIKACI
     webpushr('init','BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w','webpushr-sw.js','/SazkovkaNadeje/');
     webpushr('setup', { 'in_app_notification': false, 'onsite_messaging': false });
 
-    // 5. HLAVNÍ FUNKCE PRO ZAVŘENÍ A ULOŽENÍ
-    async function vyrizeno(stav) {
+    // 5. HLAVNÍ FUNKCE PRO ZAVŘENÍ A ULOŽENÍ (Bez async kvůli iPhonu!)
+    function vyrizeno(stav) {
         localStorage.setItem('sazka_notif_v3', stav);
         document.getElementById('n_box_root').style.display = 'none';
         document.getElementById('n_neon_trigger').style.display = 'none';
 
         if (stav === 'ano') {
-            console.log("Uživatel potvrdil odběr.");
-            if ('serviceWorker' in navigator) {
-                try {
-                    await navigator.serviceWorker.register('webpushr-sw.js');
-                } catch(e) { console.error("SW fail:", e); }
-            }
+            console.log("Uživatel potvrdil odběr, ptám se systému...");
+            // WebPushr se o service worker postará sám
             webpushr('fetch_subscription', function(r) {
                 if(r.status === 'success') {
                     alert("Nastaveno! ✅ Brzy ti přijde první zpráva.");
+                } else {
+                    console.error("Chyba odběru:", r.description);
                 }
             });
         }
     }
 
-    // 6. ZOBRAZENÍ MODÁLU (S časovou pojistkou)
+    // 6. ZOBRAZENÍ MODÁLU (Zpoždění 2,5 vteřiny, aby to nevyskočilo hned s přihlášením)
     setTimeout(() => {
         const modal = document.getElementById('n_box_root');
         const trigger = document.getElementById('n_neon_trigger');
