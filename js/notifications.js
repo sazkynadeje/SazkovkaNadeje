@@ -1,19 +1,21 @@
-// js/notifications.js - Kompletní správa notifikací pro iPhony a PC
+// js/notifications.js - Kompletní správa notifikací s logováním pro debugging
 (function() {
-    // 1. OKAMŽITÁ KONTROLA PAMĚTI
-    const notifStatus = localStorage.getItem('sazka_notif_v3');
+    console.log("🚀 NOTIF-DEBUG: Skript notifications.js se začal načítat.");
+
+    // 1. KONTROLA PAMĚTI (v4 pro vynucení resetu při testování)
+    const notifStatus = localStorage.getItem('sazka_notif_v4');
     if (notifStatus === 'ano' || notifStatus === 'skip') {
-        console.log("Notifikace již vyřešeny, skript končí.");
+        console.log("ℹ️ NOTIF-DEBUG: Uživatel již dříve zvolil '" + notifStatus + "'. Skript končí.");
         return; 
     }
 
-    // 2. CSS STYLY
+    // 2. CSS STYLY (Z-index 50000 pro přebití přihlašovacího okna)
     const style = document.createElement('style');
     style.innerHTML = `
         #n_box_root { 
             display: none; 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); z-index: 30000; 
+            background: rgba(0,0,0,0.95); z-index: 50000; 
             align-items: center; justify-content: center; font-family: -apple-system, sans-serif; 
         }
         .n_content { 
@@ -36,6 +38,7 @@
         }
     `;
     document.head.appendChild(style);
+    console.log("✅ NOTIF-DEBUG: Styly vloženy.");
 
     // 3. VYTVOŘENÍ HTML ELEMENTŮ
     const container = document.createElement('div');
@@ -51,6 +54,7 @@
         </div>
     `;
     document.body.appendChild(container);
+    console.log("✅ NOTIF-DEBUG: HTML elementy vloženy do body.");
 
     // 4. WEBPUSHR SDK INIT
     (function(w,d, s, id) {
@@ -62,56 +66,65 @@
         fjs.parentNode.appendChild(js);
     }(window,document, 'script', 'webpushr-jssdk-alternative'));
 
-    // OPRAVENÝ KLÍČ PRO TVOJI WEBPUSHR APLIKACI
+    // DŮLEŽITÉ: Pokud máš web na adrese sazkynadeje.github.io/SazkovkaNadeje/, 
+    // poslední parametr musí být '/SazkovkaNadeje/'. Pokud je to v rootu, jen '/'.
     webpushr('init','BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w','webpushr-sw.js','/SazkovkaNadeje/');
     webpushr('setup', { 'in_app_notification': false, 'onsite_messaging': false });
+    console.log("✅ NOTIF-DEBUG: WebPushr inicializován.");
 
-    // 5. HLAVNÍ FUNKCE PRO ZAVŘENÍ A ULOŽENÍ (Bez async kvůli iPhonu!)
+    // 5. HLAVNÍ FUNKCE
     function vyrizeno(stav) {
-        localStorage.setItem('sazka_notif_v3', stav);
+        console.log("🔘 NOTIF-DEBUG: Uživatel klikl na: " + stav);
+        localStorage.setItem('sazka_notif_v4', stav);
         document.getElementById('n_box_root').style.display = 'none';
         document.getElementById('n_neon_trigger').style.display = 'none';
 
         if (stav === 'ano') {
-            console.log("Uživatel potvrdil odběr, ptám se systému...");
-            // WebPushr se o service worker postará sám
+            console.log("📡 NOTIF-DEBUG: Volám webpushr('fetch_subscription')...");
             webpushr('fetch_subscription', function(r) {
+                console.log("📩 NOTIF-DEBUG: Odpověď fetch_subscription: ", r);
                 if(r.status === 'success') {
                     alert("Nastaveno! ✅ Brzy ti přijde první zpráva.");
                 } else {
-                    console.error("Chyba odběru:", r.description);
+                    alert("Chyba: " + r.description);
                 }
             });
         }
     }
 
-    // 6. ZOBRAZENÍ MODÁLU (Zpoždění 2,5 vteřiny, aby to nevyskočilo hned s přihlášením)
+    // 6. ZOBRAZENÍ MODÁLU (Zpoždění 2,5s)
     setTimeout(() => {
-        const modal = document.getElementById('n_box_root');
-        const trigger = document.getElementById('n_neon_trigger');
+        console.log("⏱️ NOTIF-DEBUG: Časovač vypršel, kontroluji status notifikací.");
+        
+        if (typeof webpushr === 'undefined') {
+            console.error("❌ NOTIF-DEBUG: CHYBA! WebPushr SDK (webpushr objekt) nebyl nalezen!");
+            return;
+        }
 
         webpushr('notification_status', function(status) {
+            console.log("📊 NOTIF-DEBUG: Aktuální status u WebPushr: " + status);
+            
             if (status === 'granted') {
-                localStorage.setItem('sazka_notif_v3', 'ano');
-                return; // Pokud už odběr je, nic neukazuj
+                console.log("ℹ️ NOTIF-DEBUG: Notifikace již jsou povoleny v prohlížeči. Končím.");
+                localStorage.setItem('sazka_notif_v4', 'ano');
+                return;
             }
             
-            // Pokud odběr není a uživatel neklikl na skip, ukaž modál
-            if (modal) modal.style.display = 'flex';
+            const modal = document.getElementById('n_box_root');
+            const trigger = document.getElementById('n_neon_trigger');
+
+            if (modal) {
+                modal.style.display = 'flex';
+                console.log("✨ NOTIF-DEBUG: Zobrazuji modální okno.");
+            }
             if (trigger) trigger.style.display = 'block';
         });
 
-        // Eventy pro tlačítka (včetně touchend pro iPhone)
-        const btnYes = document.getElementById('n_btn_yes');
-        const btnNo = document.getElementById('n_btn_no');
-
-        btnYes.onclick = () => vyrizeno('ano');
-        btnYes.ontouchend = (e) => { e.preventDefault(); vyrizeno('ano'); };
-
-        btnNo.onclick = () => vyrizeno('skip');
-        btnNo.ontouchend = (e) => { e.preventDefault(); vyrizeno('skip'); };
-
-        trigger.onclick = () => vyrizeno('ano');
+        // Eventy
+        document.getElementById('n_btn_yes').onclick = () => vyrizeno('ano');
+        document.getElementById('n_btn_no').onclick = () => vyrizeno('skip');
+        document.getElementById('n_neon_trigger').onclick = () => vyrizeno('ano');
+        
     }, 2500);
 
 })();
