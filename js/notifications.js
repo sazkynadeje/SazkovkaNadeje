@@ -1,15 +1,15 @@
-// js/notifications.js - Kompletní správa notifikací s logováním pro debugging
+// js/notifications.js - Kompletní opravená verze pro GitHub Pages
 (function() {
-    console.log("🚀 NOTIF-DEBUG: Skript notifications.js se začal načítat.");
+    console.log("🚀 NOTIF-DEBUG: Skript notifications.js se načetl.");
 
-    // 1. KONTROLA PAMĚTI (v4 pro vynucení resetu při testování)
-    const notifStatus = localStorage.getItem('sazka_notif_v4');
+    // 1. KONTROLA PAMĚTI (v5 pro vynucení resetu při testování)
+    const notifStatus = localStorage.getItem('sazka_notif_v5');
     if (notifStatus === 'ano' || notifStatus === 'skip') {
-        console.log("ℹ️ NOTIF-DEBUG: Uživatel již dříve zvolil '" + notifStatus + "'. Skript končí.");
+        console.log("ℹ️ NOTIF-DEBUG: Již dříve vyřízeno, končím.");
         return; 
     }
 
-    // 2. CSS STYLY (Z-index 50000 pro přebití přihlašovacího okna)
+    // 2. CSS STYLY (Vysoký z-index 50000)
     const style = document.createElement('style');
     style.innerHTML = `
         #n_box_root { 
@@ -38,7 +38,6 @@
         }
     `;
     document.head.appendChild(style);
-    console.log("✅ NOTIF-DEBUG: Styly vloženy.");
 
     // 3. VYTVOŘENÍ HTML ELEMENTŮ
     const container = document.createElement('div');
@@ -54,7 +53,6 @@
         </div>
     `;
     document.body.appendChild(container);
-    console.log("✅ NOTIF-DEBUG: HTML elementy vloženy do body.");
 
     // 4. WEBPUSHR SDK INIT
     (function(w,d, s, id) {
@@ -66,57 +64,47 @@
         fjs.parentNode.appendChild(js);
     }(window,document, 'script', 'webpushr-jssdk-alternative'));
 
-    // DŮLEŽITÉ: Pokud máš web na adrese sazkynadeje.github.io/SazkovkaNadeje/, 
-    // poslední parametr musí být '/SazkovkaNadeje/'. Pokud je to v rootu, jen '/'.
-    webpushr('init','BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w','webpushr-sw.js','/SazkovkaNadeje/');
+    // OPRAVA CESTY PRO GITHUB PAGES (Parametr './' vyřeší chybu 404)
+    webpushr('init','BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w', 'webpushr-sw.js', './');
     webpushr('setup', { 'in_app_notification': false, 'onsite_messaging': false });
-    console.log("✅ NOTIF-DEBUG: WebPushr inicializován.");
 
     // 5. HLAVNÍ FUNKCE
     function vyrizeno(stav) {
-        console.log("🔘 NOTIF-DEBUG: Uživatel klikl na: " + stav);
-        localStorage.setItem('sazka_notif_v4', stav);
+        console.log("🔘 NOTIF-DEBUG: Kliknuto na " + stav);
+        localStorage.setItem('sazka_notif_v5', stav);
         document.getElementById('n_box_root').style.display = 'none';
         document.getElementById('n_neon_trigger').style.display = 'none';
 
         if (stav === 'ano') {
-            console.log("📡 NOTIF-DEBUG: Volám webpushr('fetch_subscription')...");
             webpushr('fetch_subscription', function(r) {
-                console.log("📩 NOTIF-DEBUG: Odpověď fetch_subscription: ", r);
                 if(r.status === 'success') {
                     alert("Nastaveno! ✅ Brzy ti přijde první zpráva.");
                 } else {
-                    alert("Chyba: " + r.description);
+                    alert("Chyba odběru: " + r.description);
                 }
             });
         }
     }
 
-    // 6. ZOBRAZENÍ MODÁLU (Zpoždění 2,5s)
+    // 6. ZOBRAZENÍ MODÁLU
     setTimeout(() => {
-        console.log("⏱️ NOTIF-DEBUG: Časovač vypršel, kontroluji status notifikací.");
-        
         if (typeof webpushr === 'undefined') {
-            console.error("❌ NOTIF-DEBUG: CHYBA! WebPushr SDK (webpushr objekt) nebyl nalezen!");
+            console.error("❌ NOTIF-DEBUG: WebPushr SDK se nenačetlo!");
             return;
         }
 
         webpushr('notification_status', function(status) {
-            console.log("📊 NOTIF-DEBUG: Aktuální status u WebPushr: " + status);
+            console.log("📊 NOTIF-DEBUG: Aktuální status: " + status);
             
             if (status === 'granted') {
-                console.log("ℹ️ NOTIF-DEBUG: Notifikace již jsou povoleny v prohlížeči. Končím.");
-                localStorage.setItem('sazka_notif_v4', 'ano');
+                localStorage.setItem('sazka_notif_v5', 'ano');
                 return;
             }
             
             const modal = document.getElementById('n_box_root');
             const trigger = document.getElementById('n_neon_trigger');
 
-            if (modal) {
-                modal.style.display = 'flex';
-                console.log("✨ NOTIF-DEBUG: Zobrazuji modální okno.");
-            }
+            if (modal) modal.style.display = 'flex';
             if (trigger) trigger.style.display = 'block';
         });
 
