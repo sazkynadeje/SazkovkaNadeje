@@ -7,7 +7,7 @@ export const AuthService = {
         return saved ? JSON.parse(saved) : null;
     },
 
-    // Uloží nový profil (při první návštěvě nebo při "obnově" přes ID)
+    // Uloží nový profil (při první návštěvě)
     setUser: (name, id = null) => {
         const userId = id || `${sanitizeId(name)}-${Math.floor(1000 + Math.random() * 9000)}`;
         const user = { name: name.trim(), id: userId };
