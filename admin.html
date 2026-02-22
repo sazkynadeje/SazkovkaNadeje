@@ -120,8 +120,8 @@
 
     // --- NOTIFIKACE (WEBPUSHR) ---
     async function sendPush(title, msg, scheduledDate = null) {
-        const key = "E1831cba358cb7135d498741dc3d4d18";
-        const token = "118988";
+        const key = "cc80b06b1a513c4ac1227033bda09e2a"; // Správný klíč!
+        const token = "119013"; // Správný token!
         let body = {
             "title": title,
             "message": msg,
@@ -235,6 +235,7 @@
         if(v) { currentStrelci.push(v); renderTags(); document.getElementById('addStrelecInput').value = ""; }
     }
 
+    // KOMPLETNĚ OPRAVENÉ RE-VYHODNOCENÍ PROTI ZDVOJOVÁNÍ BODŮ
     async function finishEval(mid) {
         const d = parseInt(document.getElementById('finalD').value);
         const h = parseInt(document.getElementById('finalH').value);
@@ -253,46 +254,58 @@
             let winB = winS.filter(([id, s]) => fst.some(r => r.includes(s.strelec.toLowerCase().trim())));
             
             let finalWinners = winB.length > 0 ? winB : winS;
+            const idVyhercuBanku = finalWinners.map(item => item[0]);
+            const share = finalWinners.length > 0 ? Math.floor(totalBank / finalWinners.length) : 0;
+            
             const updates = {};
-
-            if(finalWinners.length > 0) {
-                const share = Math.floor(totalBank / finalWinners.length);
-                finalWinners.forEach(([sid, s]) => {
-                    updates[`sazkyData_v2/zapasy/${mid}/sazky/${sid}/stav`] = "🏆";
-                    updates[`sazkyData_v2/zapasy/${mid}/sazky/${sid}/vyhra`] = share;
-                    db.ref(`sazkyData_v2/stats/${s.jmeno}/vyhry`).transaction(c => (c||0) + share);
-                });
-                updates[`sazkyData_v2/prevedenyBank`] = 0;
-            } else {
-                updates[`sazkyData_v2/prevedenyBank`] = totalBank;
-            }
 
             sazkyEntries.forEach(([sid, s]) => {
                 const p = (s.tip || s.skore).split(':');
                 const tD = parseInt(p[0]), tH = parseInt(p[1]);
+                
                 const hitS = (tD === d && tH === h);
                 const hitT = (tD > tH && d > h) || (tD < tH && d < h) || (tD === tH && d === h);
                 const hitSt = fst.some(r => r.includes(s.strelec.toLowerCase().trim()));
 
-                let nb = (hitS ? 5 : 0) + (hitSt ? 3 : 0) + (hitT ? 1 : 0);
+                let ziskNB = (hitS ? 5 : 0) + (hitSt ? 3 : 0) + (hitT ? 1 : 0);
+                
+                const isBankWinner = idVyhercuBanku.includes(sid);
+                const novaVyhra = isBankWinner ? share : 0;
+                let novyStav = isBankWinner ? "🏆" : (hitS ? "✅" : "❌");
+
+                const stareSkore = s.awarded ? (s.awarded.score || 0) : 0;
+                const stariStrelci = s.awarded ? (s.awarded.striker || 0) : 0;
+                const staryTrend = s.awarded ? (s.awarded.trend || 0) : 0;
+                const stareNB = s.awarded ? (s.awarded.points || 0) : 0;
+                const staraVyhra = s.vyhra || 0;
+
+                updates[`sazkyData_v2/zapasy/${mid}/sazky/${sid}/stav`] = novyStav;
+                updates[`sazkyData_v2/zapasy/${mid}/sazky/${sid}/vyhra`] = novaVyhra;
+                updates[`sazkyData_v2/zapasy/${mid}/sazky/${sid}/awarded`] = {
+                    score: hitS ? 1 : 0, striker: hitSt ? 1 : 0, trend: hitT ? 1 : 0, points: ziskNB
+                };
+
                 db.ref(`sazkyData_v2/stats/${s.jmeno}`).transaction(c => {
-                    c = c || {celkoveBody:0, trefeneSkore:0};
-                    c.celkoveBody = (c.celkoveBody || 0) + nb;
-                    if(hitS) c.trefeneSkore = (c.trefeneSkore || 0) + 1;
+                    c = c || {celkoveBody:0, trefeneSkore:0, trefeniStrelci:0, trefenyTrend:0, vyhry:0};
+                    c.celkoveBody = Math.max(0, (c.celkoveBody || 0) - stareNB) + ziskNB;
+                    c.trefeneSkore = Math.max(0, (c.trefeneSkore || 0) - stareSkore) + (hitS ? 1 : 0);
+                    c.trefeniStrelci = Math.max(0, (c.trefeniStrelci || 0) - stariStrelci) + (hitSt ? 1 : 0);
+                    c.trefenyTrend = Math.max(0, (c.trefenyTrend || 0) - staryTrend) + (hitT ? 1 : 0);
+                    c.vyhry = Math.max(0, (c.vyhry || 0) - staraVyhra) + novaVyhra;
                     return c;
                 });
-                if(!updates[`sazkyData_v2/zapasy/${mid}/sazky/${sid}/stav`]) {
-                    updates[`sazkyData_v2/zapasy/${mid}/sazky/${sid}/stav`] = hitS ? "✅" : "❌";
-                }
             });
 
+            updates[`sazkyData_v2/prevedenyBank`] = finalWinners.length > 0 ? 0 : totalBank;
             updates[`sazkyData_v2/zapasy/${mid}/status`] = "vyhodnoceno";
             updates[`sazkyData_v2/zapasy/${mid}/vysledek`] = `${d}:${h}`;
             updates[`sazkyData_v2/zapasy/${mid}/strelciZapasu`] = currentStrelci;
 
             await db.ref().update(updates);
+            
             await sendPush("Zápas vyhodnocen! 🏁", `${z.domaci} - ${z.hoste} skončilo ${d}:${h}. Koukni na body!`);
-            alert("Vyhodnoceno a notifikace odeslána!");
+            
+            alert("Vyhodnoceno, body opraveny a notifikace odeslána!");
             closeModal();
         });
     }
