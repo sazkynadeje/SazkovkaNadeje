@@ -1,11 +1,11 @@
-// js/notifications.js - VERZE S ABSOLUTNÍ CESTOU PRO GITHUB PAGES
+// js/notifications.js - VERZE S AUTOMATICKOU DETEKCÍ CESTY (Pro GitHub Pages)
 (function() {
     console.log("🚀 NOTIF-DEBUG: Skript notifications.js se načetl.");
 
-    // 1. KONTROLA PAMĚTI (v6 pro čistý test)
-    const notifStatus = localStorage.getItem('sazka_notif_v6');
+    // 1. KONTROLA PAMĚTI (v7 pro vynucení resetu)
+    const notifStatus = localStorage.getItem('sazka_notif_v7');
     if (notifStatus === 'ano' || notifStatus === 'skip') {
-        console.log("ℹ️ NOTIF-DEBUG: Již dříve vyřízeno, končím.");
+        console.log("ℹ️ NOTIF-DEBUG: Již dříve vyřízeno (v7), končím.");
         return; 
     }
 
@@ -15,7 +15,7 @@
         #n_box_root { 
             display: none; 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); z-index: 50000; 
+            background: rgba(0,0,0,0.95); z-index: 60000; 
             align-items: center; justify-content: center; font-family: -apple-system, sans-serif; 
         }
         .n_content { 
@@ -64,15 +64,23 @@
         fjs.parentNode.appendChild(js);
     }(window,document, 'script', 'webpushr-jssdk-alternative'));
 
-    // TADY JE TA OPRAVA: Vložíme tam natvrdo cestu k tvé složce
-    // Pozor na velká/malá písmena v názvu složky SazkovkaNadeje!
-    webpushr('init','BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w', '/SazkovkaNadeje/webpushr-sw.js', '/SazkovkaNadeje/');
+    // --- MAGICKÁ ČÁST PRO GITHUB PAGES ---
+    // Zjistíme cestu ke složce (např. /SazkovkaNadeje/)
+    var currentPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+    
+    // Inicializace s relativní cestou bez domény
+    webpushr('init', 
+        'BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w', 
+        currentPath + 'webpushr-sw.js', 
+        currentPath
+    );
     
     webpushr('setup', { 'in_app_notification': false, 'onsite_messaging': false });
+    console.log("✅ NOTIF-DEBUG: WebPushr init volán pro cestu: " + currentPath);
 
-    // 5. FUNKCE
+    // 5. FUNKCE OVLÁDÁNÍ
     function vyrizeno(stav) {
-        localStorage.setItem('sazka_notif_v6', stav);
+        localStorage.setItem('sazka_notif_v7', stav);
         document.getElementById('n_box_root').style.display = 'none';
         document.getElementById('n_neon_trigger').style.display = 'none';
         if (stav === 'ano') {
@@ -83,19 +91,27 @@
         }
     }
 
-    // 6. ZOBRAZENÍ MODÁLU
+    // 6. ZOBRAZENÍ MODÁLU (Zpoždění 2.5s)
     setTimeout(() => {
-        if (typeof webpushr === 'undefined') return;
+        if (typeof webpushr === 'undefined') {
+            console.error("❌ NOTIF-DEBUG: SDK nenalezeno ani po 2.5s.");
+            return;
+        }
+
         webpushr('notification_status', function(status) {
-            console.log("📊 NOTIF-DEBUG: Aktuální status: " + status);
+            console.log("📊 NOTIF-DEBUG: Aktuální status v prohlížeči: " + status);
+            
             if (status === 'granted') {
-                localStorage.setItem('sazka_notif_v6', 'ano');
+                localStorage.setItem('sazka_notif_v7', 'ano');
                 return;
             }
+            
+            // Zobrazení prvků
             document.getElementById('n_box_root').style.display = 'flex';
             document.getElementById('n_neon_trigger').style.display = 'block';
         });
 
+        // Eventy
         document.getElementById('n_btn_yes').onclick = () => vyrizeno('ano');
         document.getElementById('n_btn_no').onclick = () => vyrizeno('skip');
         document.getElementById('n_neon_trigger').onclick = () => vyrizeno('ano');
