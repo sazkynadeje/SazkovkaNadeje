@@ -18,16 +18,14 @@
             js = d.createElement(s); js.id = id; js.async=1;
             js.src = "https://cdn.webpushr.com/app.min.js";
             fjs.parentNode.appendChild(js);
-        }(window,document, 'script', 'webpushr-jssdk-alternative'));
+        }(window,document, 'script', 'webpushr-jssdk'));
 
-        // DYNAMICKÁ DETEKCE CESTY (Řeší chybu 404 na GitHub Pages)
-        var wp_path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-
-        // Inicializace s tvým klíčem a automatickou cestou
-        webpushr('init', 'BNKxlbjAIXHY6C5JLpgEZhPJd_gdkLkdz_ebqjnCZXj37WJJsdU7Rowj_nw38R4rYR_qf4LCvr8uO_0Y1L0cAAU', wp_path + 'webpushr-sw.js', wp_path);
-        
-        // Zákaz automatického okna - chceme náš design
-        webpushr('setup', { 'auto_prompt': false });
+        webpushr('setup', {
+            'key': 'BIR6EdOsgrpmVfDa5qZDlfd4JQdtE_oXRpTngQXT5Bwqq3tF0k_glS9fUKinuJs3djCcxd7KxLTlM2rG-E6mGlo',
+            'auto_prompt': false, 
+            'sw': '/SazkovkaNadeje/webpushr-sw.js', // Cesta přímo k tvému SW
+            'scope': '/SazkovkaNadeje/'            // Omezení revíru na tvou složku
+        });
     </script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -57,9 +55,9 @@
 
     <div id="loginOverlay">
         <div style="background:#1e293b; padding:35px; border-radius:25px; text-align:center; border:2px solid var(--neon); width: 85%; max-width: 300px;">
-            <h2 style="color:var(--neon); margin-top:0;">KANCELÁŘ NADĚJE</h2>
+            <h2 style="color:var(--neon); margin-top:0;">VÍTEJ!</h2>
             <p style="font-size:0.9em; opacity:0.8; margin-bottom:20px;">Zadej své jméno pro vstup.</p>
-            <input type="text" id="loginName" class="input-field" placeholder="Tvoje jméno">
+            <input type="text" id="loginName" class="input-field" placeholder="Přezdívka">
             <button id="loginBtn" class="btn-add-ticket">VSTOUPIT</button>
         </div>
     </div>
@@ -69,7 +67,6 @@
     <img src="IMG_8429.png" class="header-logo" alt="LOGO">
 
     <div class="bank-box">
-        <span style="opacity:0.5; font-size:0.7em; letter-spacing:2px;">BANK</span>
         <div class="bank-main-val"><span id="uiMainBank">0</span> Kč</div>
         <div id="userWelcome" style="margin-top:10px; color:var(--neon); font-weight:bold;"></div>
     </div>
@@ -117,7 +114,7 @@
                     det.style.display = det.style.display === 'block' ? 'none' : 'block';
                 };
                 card.innerHTML = `
-                    <div style="color:var(--neon); font-size:0.8em; margin-bottom:10px;">HOKEJOVÝ ZÁPAS</div>
+                    <div style="color:var(--neon); font-size:0.8em; margin-bottom:10px;">ZÁPAS</div>
                     <div class="flags-wrapper">
                         <div><img class="flag-img" src="https://flagcdn.com/w160/${m.kodD}.png"><br><small>${m.domaci}</small></div>
                         <div class="vs-circle">VS</div>
@@ -129,7 +126,7 @@
                             <span style="font-size:2em; color:var(--neon)">:</span>
                             <input type="number" id="scH-${id}" class="score-input" placeholder="0">
                         </div>
-                        <input type="text" id="striker-${id}" class="input-field" placeholder="Střelec gólu">
+                        <input type="text" id="striker-${id}" class="input-field" placeholder="Kdo dá gól?">
                         <button class="btn-add-ticket" id="add-btn-${id}">VSADIT (20 Kč)</button>
                     </div>
                 `;
@@ -149,7 +146,7 @@
         });
 
         document.getElementById('fabCart').onclick = async () => {
-            if (confirm("Chceš odeslat tiket?")) {
+            if (confirm("Odeslat tiket?")) {
                 await DBService.sendTicket(cart);
                 alert("Tiket odeslán!");
                 location.reload();
