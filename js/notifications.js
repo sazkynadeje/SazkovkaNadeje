@@ -1,15 +1,15 @@
-// js/notifications.js - Kompletní opravená verze pro GitHub Pages
+// js/notifications.js - VERZE S ABSOLUTNÍ CESTOU PRO GITHUB PAGES
 (function() {
     console.log("🚀 NOTIF-DEBUG: Skript notifications.js se načetl.");
 
-    // 1. KONTROLA PAMĚTI (v5 pro vynucení resetu při testování)
-    const notifStatus = localStorage.getItem('sazka_notif_v5');
+    // 1. KONTROLA PAMĚTI (v6 pro čistý test)
+    const notifStatus = localStorage.getItem('sazka_notif_v6');
     if (notifStatus === 'ano' || notifStatus === 'skip') {
         console.log("ℹ️ NOTIF-DEBUG: Již dříve vyřízeno, končím.");
         return; 
     }
 
-    // 2. CSS STYLY (Vysoký z-index 50000)
+    // 2. CSS STYLY
     const style = document.createElement('style');
     style.innerHTML = `
         #n_box_root { 
@@ -39,7 +39,7 @@
     `;
     document.head.appendChild(style);
 
-    // 3. VYTVOŘENÍ HTML ELEMENTŮ
+    // 3. HTML ELEMENTY
     const container = document.createElement('div');
     container.innerHTML = `
         <button id="n_neon_trigger">🔔 ZAPNOUT OZNÁMENÍ</button>
@@ -64,55 +64,41 @@
         fjs.parentNode.appendChild(js);
     }(window,document, 'script', 'webpushr-jssdk-alternative'));
 
-    // OPRAVA CESTY PRO GITHUB PAGES (Parametr './' vyřeší chybu 404)
-    webpushr('init','BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w', 'webpushr-sw.js', './');
+    // TADY JE TA OPRAVA: Vložíme tam natvrdo cestu k tvé složce
+    // Pozor na velká/malá písmena v názvu složky SazkovkaNadeje!
+    webpushr('init','BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w', '/SazkovkaNadeje/webpushr-sw.js', '/SazkovkaNadeje/');
+    
     webpushr('setup', { 'in_app_notification': false, 'onsite_messaging': false });
 
-    // 5. HLAVNÍ FUNKCE
+    // 5. FUNKCE
     function vyrizeno(stav) {
-        console.log("🔘 NOTIF-DEBUG: Kliknuto na " + stav);
-        localStorage.setItem('sazka_notif_v5', stav);
+        localStorage.setItem('sazka_notif_v6', stav);
         document.getElementById('n_box_root').style.display = 'none';
         document.getElementById('n_neon_trigger').style.display = 'none';
-
         if (stav === 'ano') {
             webpushr('fetch_subscription', function(r) {
-                if(r.status === 'success') {
-                    alert("Nastaveno! ✅ Brzy ti přijde první zpráva.");
-                } else {
-                    alert("Chyba odběru: " + r.description);
-                }
+                if(r.status === 'success') alert("Nastaveno! ✅");
+                else alert("Chyba: " + r.description);
             });
         }
     }
 
     // 6. ZOBRAZENÍ MODÁLU
     setTimeout(() => {
-        if (typeof webpushr === 'undefined') {
-            console.error("❌ NOTIF-DEBUG: WebPushr SDK se nenačetlo!");
-            return;
-        }
-
+        if (typeof webpushr === 'undefined') return;
         webpushr('notification_status', function(status) {
             console.log("📊 NOTIF-DEBUG: Aktuální status: " + status);
-            
             if (status === 'granted') {
-                localStorage.setItem('sazka_notif_v5', 'ano');
+                localStorage.setItem('sazka_notif_v6', 'ano');
                 return;
             }
-            
-            const modal = document.getElementById('n_box_root');
-            const trigger = document.getElementById('n_neon_trigger');
-
-            if (modal) modal.style.display = 'flex';
-            if (trigger) trigger.style.display = 'block';
+            document.getElementById('n_box_root').style.display = 'flex';
+            document.getElementById('n_neon_trigger').style.display = 'block';
         });
 
-        // Eventy
         document.getElementById('n_btn_yes').onclick = () => vyrizeno('ano');
         document.getElementById('n_btn_no').onclick = () => vyrizeno('skip');
         document.getElementById('n_neon_trigger').onclick = () => vyrizeno('ano');
-        
     }, 2500);
 
 })();
