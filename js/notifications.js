@@ -1,15 +1,15 @@
-// js/notifications.js - VERZE 11 (AKTUALIZOVANÉ KLÍČE)
+// js/notifications.js - Logika neonového modálu
 (function() {
-    console.log("🚀 NOTIF-DEBUG: Start V11 s novými klíči.");
+    console.log("🚀 NOTIF-LOGIC: Spouštím verzi V12.");
 
-    // 1. KONTROLA PAMĚTI (v11)
-    const notifStatus = localStorage.getItem('sazka_notif_v11');
+    // Kontrola, zda uživatel už dříve neklikl
+    const notifStatus = localStorage.getItem('sazka_notif_v12');
     if (notifStatus === 'ano' || notifStatus === 'skip') {
-        console.log("ℹ️ NOTIF-DEBUG: Již dříve vyřízeno, končím.");
-        return; 
+        console.log("ℹ️ Již vyřízeno, modál neukazuji.");
+        return;
     }
 
-    // 2. CSS STYLY
+    // 1. STYLY
     const style = document.createElement('style');
     style.innerHTML = `
         #n_box_root { 
@@ -22,19 +22,22 @@
             border: 2px solid #00f2ff; max-width: 290px; text-align: center; 
             color: white; box-shadow: 0 0 30px rgba(0,242,255,0.3);
         }
-        .n_btn { width: 100%; padding: 18px; margin-top: 15px; border-radius: 18px; border: none; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+        .n_btn { 
+            width: 100%; padding: 18px; margin-top: 15px; border-radius: 18px; 
+            border: none; font-weight: 900; cursor: pointer; text-transform: uppercase; 
+        }
         .n_yes { background: #00f2ff; color: #000; }
         .n_no { background: rgba(255,255,255,0.1); color: white; margin-top: 10px; }
     `;
     document.head.appendChild(style);
 
-    // 3. HTML ELEMENTY
+    // 2. HTML
     const container = document.createElement('div');
     container.innerHTML = `
         <div id="n_box_root">
             <div class="n_content">
-                <h2 style="color:#00f2ff; margin:0 0 15px 0;">NOTIFIKACE</h2>
-                <p>Chceš dostávat upozornění na výsledky přímo na displej?</p>
+                <h2 style="color:#00f2ff; margin:0 0 15px 0; font-size: 1.5em;">NOTIFIKACE</h2>
+                <p style="line-height: 1.5; opacity: 0.9;">Chceš dostávat upozornění na výsledky a góly přímo na displej?</p>
                 <button id="n_btn_yes" class="n_btn n_yes">ANO, CHCI</button>
                 <button id="n_btn_no" class="n_btn n_no">MOŽNÁ POZDĚJI</button>
             </div>
@@ -42,37 +45,33 @@
     `;
     document.body.appendChild(container);
 
-    // 4. WEBPUSHR SDK INIT
-    (function(w,d, s, id) {
-        if(typeof(w.webpushr)!=='undefined') return;
-        w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};
-        var js, fjs = d.getElementsByTagName(s)[0];
-        js = d.createElement(s); js.id = id;js.async=1;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-    }(window,document, 'script', 'webpushr-jssdk'));
-
-    // POUŽITÍ NOVÉHO KLÍČE A CESTY PRO GITHUB PAGES
-    webpushr('init', 'BNKxlbjAIXHY6C5JLpgEZhPJd_gdkLkdz_ebqjnCZXj37WJJsdU7Rowj_nw38R4rYR_qf4LCvr8uO_0Y1L0cAAU', '/SazkovkaNadeje/webpushr-sw.js', '/SazkovkaNadeje/');
-    webpushr('setup', { 'in_app_notification': false, 'onsite_messaging': false });
-
-    // 5. FUNKCE
+    // 3. FUNKCE TLAČÍTEK
     function vyrizeno(stav) {
-        localStorage.setItem('sazka_notif_v11', stav);
+        localStorage.setItem('sazka_notif_v12', stav);
         document.getElementById('n_box_root').style.display = 'none';
-        if (stav === 'ano') {
+        
+        if (stav === 'ano' && typeof webpushr !== 'undefined') {
+            console.log("Vyvolávám systémovou žádost o odběr...");
             webpushr('fetch_subscription', function(r) {
-                if(r.status === 'success') alert("Nastaveno! ✅");
-                else console.log("Chyba odběru: " + r.description);
+                if(r.status === 'success') {
+                    alert("Nastaveno! ✅ Brzy ti přijde první zpráva.");
+                } else {
+                    console.log("Webpushr Info: " + r.description);
+                }
             });
         }
     }
 
-    // 6. ZOBRAZENÍ MODÁLU
+    // 4. ZOBRAZENÍ S PRODLEVOU (3 vteřiny)
     setTimeout(() => {
-        if (typeof webpushr === 'undefined') return;
+        if (typeof webpushr === 'undefined') {
+            console.error("Webpushr SDK se nepodařilo načíst.");
+            return;
+        }
+
         webpushr('notification_status', function(status) {
-            console.log("📊 Status: " + status);
+            console.log("📊 Aktuální status notifikací: " + status);
+            // Pokud notifikace ještě nejsou povoleny, ukaž náš modál
             if (status !== 'granted') {
                 document.getElementById('n_box_root').style.display = 'flex';
             }
@@ -80,6 +79,5 @@
 
         document.getElementById('n_btn_yes').onclick = () => vyrizeno('ano');
         document.getElementById('n_btn_no').onclick = () => vyrizeno('skip');
-    }, 2500);
-
+    }, 3000);
 })();
