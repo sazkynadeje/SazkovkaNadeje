@@ -1,11 +1,11 @@
-// js/notifications.js - VERZE S AUTOMATICKOU DETEKCÍ CESTY (Pro GitHub Pages)
+// js/notifications.js - VERZE 8 (HARDCORE FIX PRO GITHUB PAGES)
 (function() {
-    console.log("🚀 NOTIF-DEBUG: Skript notifications.js se načetl.");
+    console.log("🚀 NOTIF-DEBUG: Skript notifications.js se načetl (V8).");
 
-    // 1. KONTROLA PAMĚTI (v7 pro vynucení resetu)
-    const notifStatus = localStorage.getItem('sazka_notif_v7');
+    // 1. KONTROLA PAMĚTI
+    const notifStatus = localStorage.getItem('sazka_notif_v8');
     if (notifStatus === 'ano' || notifStatus === 'skip') {
-        console.log("ℹ️ NOTIF-DEBUG: Již dříve vyřízeno (v7), končím.");
+        console.log("ℹ️ NOTIF-DEBUG: Již dříve vyřízeno, končím.");
         return; 
     }
 
@@ -13,9 +13,8 @@
     const style = document.createElement('style');
     style.innerHTML = `
         #n_box_root { 
-            display: none; 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); z-index: 60000; 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.95); z-index: 99999; 
             align-items: center; justify-content: center; font-family: -apple-system, sans-serif; 
         }
         .n_content { 
@@ -26,27 +25,19 @@
         .n_btn { 
             width: 100%; padding: 18px; margin-top: 15px; border-radius: 18px; 
             border: none; font-weight: 900; cursor: pointer; text-transform: uppercase; 
-            font-size: 0.9em; letter-spacing: 1px;
         }
         .n_yes { background: #00f2ff; color: #000; }
-        .n_no { background: rgba(255,255,255,0.1); color: white; margin-top: 10px; }
-        #n_neon_trigger { 
-            display: none; margin: 20px auto; padding: 15px; 
-            background: transparent; border: 2px solid #00f2ff; 
-            color: #00f2ff; border-radius: 100px; font-weight: bold; 
-            width: 90%; cursor: pointer; box-shadow: 0 0 10px rgba(0,242,255,0.2);
-        }
+        .n_no { background: rgba(255,255,255,0.1); color: white; }
     `;
     document.head.appendChild(style);
 
     // 3. HTML ELEMENTY
     const container = document.createElement('div');
     container.innerHTML = `
-        <button id="n_neon_trigger">🔔 ZAPNOUT OZNÁMENÍ</button>
         <div id="n_box_root">
             <div class="n_content">
-                <h2 style="color:#00f2ff; margin:0 0 15px 0; font-size: 1.5em;">NOTIFIKACE</h2>
-                <p style="line-height: 1.5; opacity: 0.9;">Chceš dostávat upozornění na výsledky a góly přímo na displej?</p>
+                <h2 style="color:#00f2ff; margin:0 0 15px 0;">NOTIFIKACE</h2>
+                <p>Chceš dostávat upozornění na výsledky přímo na displej?</p>
                 <button id="n_btn_yes" class="n_btn n_yes">ANO, CHCI</button>
                 <button id="n_btn_no" class="n_btn n_no">MOŽNÁ POZDĚJI</button>
             </div>
@@ -64,25 +55,20 @@
         fjs.parentNode.appendChild(js);
     }(window,document, 'script', 'webpushr-jssdk-alternative'));
 
-    // --- MAGICKÁ ČÁST PRO GITHUB PAGES ---
-    // Zjistíme cestu ke složce (např. /SazkovkaNadeje/)
-    var currentPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-    
-    // Inicializace s relativní cestou bez domény
-    webpushr('init', 
-        'BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w', 
-        currentPath + 'webpushr-sw.js', 
-        currentPath
-    );
-    
-    webpushr('setup', { 'in_app_notification': false, 'onsite_messaging': false });
-    console.log("✅ NOTIF-DEBUG: WebPushr init volán pro cestu: " + currentPath);
+    // --- KLÍČOVÁ OPRAVA CESTY ---
+    // Musíme použít přesnou cestu k souboru od kořene domény
+    const swPath = '/SazkovkaNadeje/webpushr-sw.js';
+    const swScope = '/SazkovkaNadeje/';
 
-    // 5. FUNKCE OVLÁDÁNÍ
+    webpushr('init', 'BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w', swPath, swScope);
+    webpushr('setup', { 'in_app_notification': false, 'onsite_messaging': false });
+    
+    console.log("✅ NOTIF-DEBUG: WebPushr init poslán s cestou: " + swPath);
+
+    // 5. FUNKCE
     function vyrizeno(stav) {
-        localStorage.setItem('sazka_notif_v7', stav);
+        localStorage.setItem('sazka_notif_v8', stav);
         document.getElementById('n_box_root').style.display = 'none';
-        document.getElementById('n_neon_trigger').style.display = 'none';
         if (stav === 'ano') {
             webpushr('fetch_subscription', function(r) {
                 if(r.status === 'success') alert("Nastaveno! ✅");
@@ -91,30 +77,17 @@
         }
     }
 
-    // 6. ZOBRAZENÍ MODÁLU (Zpoždění 2.5s)
+    // 6. ZOBRAZENÍ
     setTimeout(() => {
-        if (typeof webpushr === 'undefined') {
-            console.error("❌ NOTIF-DEBUG: SDK nenalezeno ani po 2.5s.");
-            return;
-        }
-
+        if (typeof webpushr === 'undefined') return;
         webpushr('notification_status', function(status) {
-            console.log("📊 NOTIF-DEBUG: Aktuální status v prohlížeči: " + status);
-            
-            if (status === 'granted') {
-                localStorage.setItem('sazka_notif_v7', 'ano');
-                return;
+            console.log("📊 NOTIF-DEBUG: Status: " + status);
+            if (status !== 'granted') {
+                document.getElementById('n_box_root').style.display = 'flex';
             }
-            
-            // Zobrazení prvků
-            document.getElementById('n_box_root').style.display = 'flex';
-            document.getElementById('n_neon_trigger').style.display = 'block';
         });
 
-        // Eventy
         document.getElementById('n_btn_yes').onclick = () => vyrizeno('ano');
         document.getElementById('n_btn_no').onclick = () => vyrizeno('skip');
-        document.getElementById('n_neon_trigger').onclick = () => vyrizeno('ano');
     }, 2500);
-
 })();
