@@ -1,11 +1,11 @@
-// js/notifications.js - VERZE 8 (HARDCORE FIX PRO GITHUB PAGES)
+// js/notifications.js - VERZE 9 (FULL URL INJECTION)
 (function() {
-    console.log("🚀 NOTIF-DEBUG: Skript notifications.js se načetl (V8).");
+    console.log("🚀 NOTIF-DEBUG: Skript notifications.js V9 (Full URL) načten.");
 
     // 1. KONTROLA PAMĚTI
-    const notifStatus = localStorage.getItem('sazka_notif_v8');
+    const notifStatus = localStorage.getItem('sazka_notif_v9');
     if (notifStatus === 'ano' || notifStatus === 'skip') {
-        console.log("ℹ️ NOTIF-DEBUG: Již dříve vyřízeno, končím.");
+        console.log("ℹ️ NOTIF-DEBUG: Vyřešeno dříve, končím.");
         return; 
     }
 
@@ -22,10 +22,7 @@
             border: 2px solid #00f2ff; max-width: 290px; text-align: center; 
             color: white; box-shadow: 0 0 30px rgba(0,242,255,0.3);
         }
-        .n_btn { 
-            width: 100%; padding: 18px; margin-top: 15px; border-radius: 18px; 
-            border: none; font-weight: 900; cursor: pointer; text-transform: uppercase; 
-        }
+        .n_btn { width: 100%; padding: 18px; margin-top: 15px; border-radius: 18px; border: none; font-weight: 900; cursor: pointer; }
         .n_yes { background: #00f2ff; color: #000; }
         .n_no { background: rgba(255,255,255,0.1); color: white; }
     `;
@@ -55,31 +52,34 @@
         fjs.parentNode.appendChild(js);
     }(window,document, 'script', 'webpushr-jssdk-alternative'));
 
-    // --- KLÍČOVÁ OPRAVA CESTY ---
-    // Musíme použít přesnou cestu k souboru od kořene domény
-    const swPath = '/SazkovkaNadeje/webpushr-sw.js';
-    const swScope = '/SazkovkaNadeje/';
+    // --- HARDCORE FULL URL REGISTRACE ---
+    // Tady definujeme naprosto přesné adresy, aby SDK nemohlo nic zkrátit
+    const fullSWUrl = "https://sazkynadeje.github.io/SazkovkaNadeje/webpushr-sw.js";
+    const fullScope = "https://sazkynadeje.github.io/SazkovkaNadeje/";
 
-    webpushr('init', 'BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w', swPath, swScope);
+    webpushr('init', 'BJLqlsfhPhmUGRT1vU8Ob_iUP0ZGtgh2-jGjhFTc8u_rCYpSIBMjasZ1HPA0EJSUDjRfpB59-lv7i1B3zObvF5w', fullSWUrl, fullScope);
     webpushr('setup', { 'in_app_notification': false, 'onsite_messaging': false });
     
-    console.log("✅ NOTIF-DEBUG: WebPushr init poslán s cestou: " + swPath);
+    console.log("✅ NOTIF-DEBUG: WebPushr INIT s plnou URL: " + fullSWUrl);
 
     // 5. FUNKCE
     function vyrizeno(stav) {
-        localStorage.setItem('sazka_notif_v8', stav);
+        localStorage.setItem('sazka_notif_v9', stav);
         document.getElementById('n_box_root').style.display = 'none';
         if (stav === 'ano') {
             webpushr('fetch_subscription', function(r) {
                 if(r.status === 'success') alert("Nastaveno! ✅");
-                else alert("Chyba: " + r.description);
+                else alert("Chyba odběru: " + r.description);
             });
         }
     }
 
     // 6. ZOBRAZENÍ
     setTimeout(() => {
-        if (typeof webpushr === 'undefined') return;
+        if (typeof webpushr === 'undefined') {
+            console.error("❌ NOTIF-DEBUG: SDK se nenačetlo.");
+            return;
+        }
         webpushr('notification_status', function(status) {
             console.log("📊 NOTIF-DEBUG: Status: " + status);
             if (status !== 'granted') {
