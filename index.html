@@ -129,6 +129,15 @@
 </head>
 <body>
 
+    <div id="loginOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--dark); z-index:40000; align-items:center; justify-content:center;">
+        <div style="background:#1e293b; padding:35px; border-radius:25px; text-align:center; border:2px solid var(--neon); box-shadow:0 0 40px rgba(0,242,255,0.3); max-width: 300px; width: 85%;">
+            <h2 style="color:var(--neon); margin-top:0;">VÍTEJ V KANCELÁŘI!</h2>
+            <p style="font-size:0.9em; opacity:0.8; margin-bottom:20px;">Zadej svou přezdívku pro vstup do sázkovky.</p>
+            <input type="text" id="loginName" class="input-field" placeholder="Tvoje jméno" style="margin-bottom:20px;">
+            <button id="loginBtn" class="btn-add-ticket">VSTOUPIT</button>
+        </div>
+    </div>
+
     <a href="admin.html" style="position:fixed; top:20px; right:20px; width:48px; height:48px; border:2px solid var(--neon); border-radius:50%; display:flex; align-items:center; justify-content:center; text-decoration:none; z-index:9999; background:rgba(15,23,42,0.9);">⚙️</a>
 
     <img src="IMG_8429.png" class="header-logo" alt="LOGO">
@@ -153,16 +162,21 @@
 
         let cart = {};
 
+        // BEZPEČNÉ PŘIHLÁŠENÍ BEZ PROMPTU A RELOADU
         let user = AuthService.getUser();
         if (!user) {
-            const name = prompt("Vítej! Zadej své jméno:");
-            if (name) {
-                user = AuthService.setUser(name);
-                location.reload();
-            }
-        }
-
-        if (user) {
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('loginBtn').onclick = () => {
+                const name = document.getElementById('loginName').value.trim();
+                if (name) {
+                    user = AuthService.setUser(name);
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    document.getElementById('userWelcome').innerText = `Hráč: ${user.name}`;
+                } else {
+                    alert("Zadej prosím jméno!");
+                }
+            };
+        } else {
             document.getElementById('userWelcome').innerText = `Hráč: ${user.name}`;
         }
 
@@ -235,6 +249,6 @@
         };
     </script>
 
-    <script src="notifications.js"></script>
+    <script src="js/notifications.js"></script>
 </body>
 </html>
