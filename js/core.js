@@ -50,4 +50,3 @@ export function calculatePoints(tip, result) {
                (hitsTrend ? CONFIG.POINTS.TREND : 0)
     };
 }
-
